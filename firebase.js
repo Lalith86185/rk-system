@@ -65,7 +65,9 @@ try {
     }
   };
 
-  if (window.__rkResolve) window.__rkResolve({ db, auth: authApi });
+  window.__rkLive = { db, auth: authApi };
+  if (window.__rkResolve) window.__rkResolve(window.__rkLive);
+  try { window.dispatchEvent(new Event('rk-live')); } catch (e) {}
 } catch (e) {
   if (window.__rkResolve) window.__rkResolve(null);
 }

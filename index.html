@@ -537,10 +537,10 @@ function makeLive(db){
 const S={store:makeLocal(),products:DEFAULTS.slice(),bookings:[],reviews:[],priceLog:[],holidays:[],authed:false,canAdmin:false,authHash:null,booting:true,tab:'overview',unsubs:[],filter:'all',q:'',loc:null,rate:0,fails:0,lockUntil:0};
 const liveProducts=()=>S.products.filter(p=>p.active!==false);
 function subscribe(){
-  S.unsubs.forEach(u=>u());S.unsubs=[];
+  S.unsubs.forEach(u=>u());S.unsubs=[];S.cfgReady=false;
   S.unsubs.push(S.store.watch('config',l=>{
     const d=l.find(x=>x.id==='products');S.products=d&&Array.isArray(d.items)&&d.items.length?d.items:DEFAULTS.slice();
-    const a=l.find(x=>x.id==='auth');S.authHash=a&&a.hash?a.hash:null;const hd=l.find(x=>x.id==='holidays');S.holidays=hd&&Array.isArray(hd.dates)?hd.dates.slice():[];renderAll();updHolHint()}));
+    const a=l.find(x=>x.id==='auth');S.authHash=a&&a.hash?a.hash:null;const hd=l.find(x=>x.id==='holidays');S.holidays=hd&&Array.isArray(hd.dates)?hd.dates.slice():[];S.cfgReady=true;if(S._cfgWait){const w=S._cfgWait;S._cfgWait=null;w()}renderAll();updHolHint()}));
   S.unsubs.push(S.store.watch('reviews',l=>{S.reviews=l;renderAll()}));
   if(S.authed){
     S.unsubs.push(S.store.watch('bookings',l=>{S.bookings=l;renderAll()}));
@@ -677,6 +677,7 @@ async function submitBooking(){
   if(!/^[6-9]\d{9}$/.test(phone)){err.textContent='Enter a 10 digit mobile number starting with 6 to 9.';return}
   if(addr.length<8){err.textContent='Enter your full address.';return}
   if(!$('#bDate').value){err.textContent='Choose a date.';return}
+  if(S.store.live&&!S.cfgReady){err.textContent='Just a moment\u2026';await new Promise(r=>{S._cfgWait=r;setTimeout(r,4000)});err.textContent=''}
   if(isHoliday($('#bDate').value)){err.textContent='Sorry, we are closed on '+fmtD($('#bDate').value)+' (holiday). Please choose another date.';return}
   const mu=S.loc?mapUrl(S.loc.lat,S.loc.lng):(/^https?:\/\//.test(link)?link:'');
   const b={id:newId(),kind:p.kind,itemId:p.id,itemName:p.name,price:p.price,name,phone,address:addr,lat:S.loc?S.loc.lat:null,lng:S.loc?S.loc.lng:null,mapUrl:mu,date:$('#bDate').value,slot:$('#bSlot').value,notes:$('#bNotes').value.trim(),status:'pending',createdAt:Date.now()};
@@ -874,13 +875,12 @@ async function exportCsv(){
 /* ---------- boot ---------- */
 function renderAll(){renderProducts();renderReviewsPublic();fillItems();if(!$('[data-view=admin]').hidden)renderAdmin()}
 drawLevels();renderAll();authUI();route();subscribe();
+function swapLive(live){if(!live||!live.db||S.store.live)return;S.store=makeLive(live.db);S.liveAuth=live.auth;S.canAdmin=true;live.auth.onChange(a=>{const was=S.authed;S.authed=a;authUI();subscribe();if(a!==was)route()});authUI();subscribe();route()}
+window.addEventListener('rk-live',()=>swapLive(window.__rkLive));
 (async()=>{
   let live=null;
   try{live=await window.__rkReady}catch(e){}
-  if(live&&live.db){
-    S.store=makeLive(live.db);S.liveAuth=live.auth;S.canAdmin=true;
-    live.auth.onChange(a=>{const was=S.authed;S.authed=a;authUI();subscribe();if(a!==was)route()});
-  }
+  swapLive(live);
   S.booting=false;
   if(!S.store.live){let sess=false;try{sess=sessionStorage.getItem('rk_admin')==='1'}catch(e){}if(sess)S.authed=true}
   authUI();subscribe();route();
