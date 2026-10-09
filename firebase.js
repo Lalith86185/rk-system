@@ -12,9 +12,16 @@ import {
   updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-const FIREBASE_CONFIG = {}; // filled in when the Firebase project is ready
+const FIREBASE_CONFIG = {
+  "apiKey": "AIzaSyAfOAwPkg1tRejkX5SkFsk5hGEb0fe0HDo",
+  "authDomain": "rk-system-2e9a2.firebaseapp.com",
+  "projectId": "rk-system-2e9a2",
+  "storageBucket": "rk-system-2e9a2.firebasestorage.app",
+  "messagingSenderId": "159129690940",
+  "appId": "1:159129690940:web:c8a7947dbb495f77e3f439"
+};
 const ADMIN_EMAIL = "admin@rksystem.in";
-const ADMIN_UID = "__ADMIN_UID__";
+const ADMIN_UID = "e2IplGFjajUTWt3iHItVObdVfx52";
 
 try {
   if (!FIREBASE_CONFIG.apiKey) throw new Error('backend not configured yet');
