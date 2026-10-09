@@ -5,7 +5,7 @@
    its built-in per-browser demo storage). */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
-  getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, query, where
+  getFirestore, collection, doc, getDoc, onSnapshot, setDoc, updateDoc, deleteDoc, query, where
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
@@ -44,6 +44,7 @@ try {
         doc(id) {
           const d = doc(fs, name, id);
           return {
+            get: async () => { const s = await getDoc(d); return s.exists() ? Object.assign({ id: s.id }, s.data()) : null; },
             set: (v) => setDoc(d, v),
             update: (p) => updateDoc(d, p),
             delete: () => deleteDoc(d)

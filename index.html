@@ -245,6 +245,7 @@ footer .lbtn{background:none;border:0;color:var(--on-band);opacity:.9;text-decor
       <a href="#how" data-nav="how">How it works</a>
       <a href="#reviews" data-nav="reviews">Reviews</a>
       <a href="#faq" data-nav="faq">FAQ</a>
+      <a href="#track" data-nav="track">Track booking</a>
       <span class="sep" aria-hidden="true"></span>
       <a href="#login" data-nav="login" id="navLogin">Admin login</a>
       <a href="#admin" data-nav="admin" id="navDash" hidden>Dashboard</a>
@@ -360,7 +361,7 @@ footer .lbtn{background:none;border:0;color:var(--on-band);opacity:.9;text-decor
 <div class="view" data-view="book" hidden>
   <section class="page"><div class="wrap" style="max-width:760px">
     <h2>Book RK System</h2>
-    <p class="muted" style="margin:8px 0 24px">Tell us what you need and where. We will confirm by phone or WhatsApp.</p>
+    <p class="muted" style="margin:8px 0 24px">Tell us what you need and where. We will confirm by phone or WhatsApp. Already booked? <a href="#track">Track your booking</a>.</p>
     <div id="bookWrap">
     <div class="form" id="bookForm">
       <fieldset class="seg" style="border:0;padding:0;margin:0">
@@ -390,6 +391,21 @@ footer .lbtn{background:none;border:0;color:var(--on-band);opacity:.9;text-decor
       <button class="btn red" id="bSubmit" type="button">Confirm booking</button>
     </div>
     </div>
+  </div></section>
+</div>
+
+<!-- TRACK -->
+<div class="view" data-view="track" hidden>
+  <section class="page"><div class="wrap" style="max-width:640px">
+    <h2>Track your booking</h2>
+    <p class="muted" style="margin:8px 0 18px">Enter the mobile number you booked with and your booking ID (from your confirmation screen, like RK-AB12CD3).</p>
+    <div class="form" id="trackForm">
+      <label class="f">Mobile number<input class="in" id="tPhone" inputmode="numeric" maxlength="10" placeholder="10 digit mobile number"></label>
+      <label class="f">Booking ID<input class="in" id="tId" maxlength="12" placeholder="RK-XXXXXXX" style="text-transform:uppercase"></label>
+      <p class="err" id="tErr" role="alert"></p>
+      <button class="btn" id="tGo" type="button">See my booking</button>
+    </div>
+    <div id="tResult" style="margin-top:20px"></div>
   </div></section>
 </div>
 
@@ -449,7 +465,7 @@ footer .lbtn{background:none;border:0;color:var(--on-band);opacity:.9;text-decor
   <div class="wrap">
     <div><img width="415" height="120" src="logo.png" alt="RK System" style="height:44px;width:auto;border-radius:8px;margin-bottom:12px"><p style="opacity:.85;max-width:36ch">Manufacturer of automatic water level controllers with indicator.</p></div>
     <div><h3>Contact</h3><ul><li><a href="tel:+917204638853">72046 38853</a></li><li><a href="https://wa.me/917204638853" target="_blank" rel="noopener">WhatsApp</a></li></ul></div>
-    <div><h3>Explore</h3><ul><li><a href="#products">Products</a></li><li><a href="#book">Book now</a></li><li><a href="#reviews">Reviews</a></li><li><a href="#login" id="fLogin">Admin login</a></li></ul></div>
+    <div><h3>Explore</h3><ul><li><a href="#products">Products</a></li><li><a href="#book">Book now</a></li><li><a href="#reviews">Reviews</a></li><li><a href="#track">Track booking</a></li><li><a href="#login" id="fLogin">Admin login</a></li></ul></div>
     <p class="fine">ISO 9001:2015 · STQC certification · Make in India, as printed on the product label.</p>
   </div>
 </footer>
@@ -515,6 +531,7 @@ function makeLocal(){
   return{
     live:false,
     watch(c,cb){(subs[c]=subs[c]||[]).push(cb);cb(Object.entries(data[c]||{}).map(([id,v])=>({id,...v})));return()=>{subs[c]=subs[c].filter(f=>f!==cb)}},
+    async get(c,id){const v=(data[c]||{})[id];return v?Object.assign({id},v):null},
     async set(c,id,v){(data[c]=data[c]||{})[id]=v;save();emit(c)},
     async update(c,id,p){data[c][id]=Object.assign({},data[c][id],p);save();emit(c)},
     async del(c,id){delete data[c][id];save();emit(c)}
@@ -524,6 +541,7 @@ function makeLive(db){
   return{
     live:true,
     watch(c,cb){return db.collection(c).onSnapshot(s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))),()=>cb([]))},
+    get:(c,id)=>db.collection(c).doc(id).get(),
     set:(c,id,v)=>db.collection(c).doc(id).set(v),
     update:(c,id,p)=>db.collection(c).doc(id).update(p),
     del:(c,id)=>db.collection(c).doc(id).delete()
@@ -554,7 +572,7 @@ function route(){
   if(HOME_ANCHORS.includes(h)){anchor=h;h='home'}
   if(h==='admin'&&!S.authed)h='login';
   if(h==='login'&&S.authed)h='admin';
-  if(!['home','book','reviews','login','admin'].includes(h))h='home';
+  if(!['home','book','track','reviews','login','admin'].includes(h))h='home';
   $$('.view').forEach(v=>v.hidden=v.dataset.view!==h);
   $$('[data-nav]').forEach(a=>a.removeAttribute('aria-current'));
   const cur=$(`[data-nav="${anchor||h}"]`);if(cur)cur.setAttribute('aria-current','page');
@@ -641,6 +659,29 @@ const waText=b=>`New booking ${b.id}\n${b.kind==='system'?'New system':'Service'
 const CMB_KEY='';
 const notifyAdmin=t=>{if(!CMB_KEY)return;try{const i=new Image();i.src='https://api.callmebot.com/whatsapp.php?phone=917204638853&text='+encodeURIComponent(t)+'&apikey='+CMB_KEY;}catch(e){}};
 const waCancelText=b=>`Booking CANCELLED ${b.id}\n${b.kind==='system'?'New system':'Service'}: ${b.itemName} (${inr(b.price)})\nName: ${b.name}\nPhone: ${b.phone}\nDate: ${b.date}, ${b.slot}\nAddress: ${b.address}`;
+const syncLookup=async(b,st)=>{try{await S.store.set('lookup',b.id,{phoneHash:hashPw('track:'+b.phone),kind:b.kind,itemName:b.itemName,price:b.price,date:b.date,slot:b.slot,status:st||b.status,createdAt:b.createdAt||Date.now()})}catch(e){}};
+async function trackLookup(){
+  const err=$('#tErr'),res=$('#tResult');if(!err)return;err.textContent='';res.innerHTML='';
+  const phone=$('#tPhone').value.trim(),id=$('#tId').value.trim().toUpperCase();
+  if(!/^[6-9]\d{9}$/.test(phone)){err.textContent='Enter the 10 digit mobile number used for the booking.';return}
+  if(!/^RK-[A-Z0-9]{7}$/.test(id)){err.textContent='Enter the booking ID from your confirmation, like RK-AB12CD3.';return}
+  const btn=$('#tGo');btn.disabled=true;btn.textContent='Checking\u2026';
+  try{
+    if(window.__rkReady){try{await Promise.race([window.__rkReady,new Promise(r=>setTimeout(r,3500))])}catch(e){}}
+    const d=await S.store.get('lookup',id);
+    if(!d||d.phoneHash!==hashPw('track:'+phone)){err.textContent='No booking found for that mobile number and booking ID. Please check both and try again. (Bookings made before today cannot be tracked online \u2014 call us on 72046 38853.)';return}
+    const canCancel=d.status==='pending'&&(Date.now()-(d.createdAt||0))<3600000;
+    res.innerHTML=`<div class="ok-box" style="text-align:left"><h3 style="margin-bottom:8px">${esc(d.itemName)} <span class="st s-${esc(d.status)}">${esc(d.status)}</span></h3><p><b>${inr(d.price)}</b><br>${esc(d.date)}, ${esc(d.slot)}<br><span class="muted">Booking ID ${esc(d.id)}</span></p>${d.status==='pending'?'<p class="muted">We have your booking and will call you to confirm the visit.</p>':''}${canCancel?'<div style="margin-top:12px"><button type="button" class="btn ghost" id="tCancel">Cancel this booking</button><p class="hint" id="tCancelHint">Free cancellation is available within 1 hour of booking.</p></div>':''}</div>`;
+    const tc=$('#tCancel');
+    if(tc){let armed=false;tc.addEventListener('click',async()=>{
+      if(!armed){armed=true;tc.textContent='Tap again to confirm cancel';tc.classList.add('red');setTimeout(()=>{if(armed){armed=false;tc.textContent='Cancel this booking';tc.classList.remove('red')}},5000);return}
+      tc.disabled=true;tc.textContent='Cancelling\u2026';
+      try{await S.store.update('bookings',id,{status:'cancelled'});const bb={id,kind:d.kind,itemName:d.itemName,price:d.price,date:d.date,slot:d.slot,createdAt:d.createdAt,phone};await syncLookup(bb,'cancelled');notifyAdmin(waCancelText(bb));trackLookup();}
+      catch(e){tc.disabled=false;const hh=$('#tCancelHint');if(hh)hh.textContent='We could not cancel online \u2014 the 1-hour window may have passed. Please call us on 72046 38853 to cancel.'}
+    })}
+  }catch(e){err.textContent='Could not check right now. Please try again in a moment.'}
+  finally{btn.disabled=false;btn.textContent='See my booking'}
+}
 const fmtD=d=>{try{return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}catch(e){return d}};
 const isHoliday=d=>!!d&&S.holidays.includes(d);
 function updHolHint(){const h=document.querySelector('#holHint');if(!h)return;const t=day(new Date());const up=S.holidays.filter(d=>d>=t).sort();h.textContent=up.length?('Please note: we are closed on '+up.slice(0,6).map(fmtD).join(', ')+(up.length>6?(' and '+(up.length-6)+' more dates'):'')):''}
@@ -689,13 +730,13 @@ async function submitBooking(){
     err.textContent='We could not save your booking. Check your connection and tap Confirm booking again.';
     return;
   }
-  notifyAdmin(waText(b));
+  notifyAdmin(waText(b));syncLookup(b);
   $('#bookWrap').innerHTML=`<div class="ok-box"><h3>\u2713 Booking confirmed</h3>
     <p style="font-size:1.1rem">Your booking ID is <b>${esc(b.id)}</b>. Keep it for your reference.</p>
     <p><b>${esc(b.itemName)}</b> (${inr(b.price)})<br>${esc(b.date)}, ${esc(b.slot)}<br>${esc(b.name)} \u00b7 ${esc(b.phone)}<br><span class="muted">${esc(b.address)}</span></p>
     <p class="muted">RK System has received your booking and will call you on ${esc(b.phone)} to confirm the visit.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn red" id="bAgain">Book another</button><a class="btn ghost" href="#home">Back to home</a><button type="button" class="btn ghost" id="bCancel">Cancel this booking</button></div>
-    <p class="hint" id="bCancelHint">Changed your mind? You can cancel free within 1 hour of booking (until ${new Date(b.createdAt+3600000).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})}).</p></div>`;
+    <p class="hint" id="bCancelHint">Changed your mind? You can cancel free within 1 hour of booking (until ${new Date(b.createdAt+3600000).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})}).</p><p class="hint">Tip: keep your booking ID. On the <a href="#track">Track booking</a> page you can see this booking any time with your mobile number + booking ID.</p></div>`;
   const ba=$('#bAgain');if(ba)ba.addEventListener('click',resetBookingForm);
   const bc=$('#bCancel');
   if(bc){let armed=false;const left=()=>3600000-(Date.now()-(b.createdAt||Date.now()));
@@ -706,7 +747,7 @@ async function submitBooking(){
       if(left()<=0){tick();return}
       if(!armed){armed=true;bc.textContent='Tap again to confirm cancel';bc.classList.add('red');setTimeout(()=>{if(armed)disarm()},5000);return}
       bc.disabled=true;bc.textContent='Cancelling\u2026';
-      try{await S.store.update('bookings',b.id,{status:'cancelled'});notifyAdmin(waCancelText(b));clearInterval(armT);
+      try{await S.store.update('bookings',b.id,{status:'cancelled'});notifyAdmin(waCancelText(b));syncLookup(b,'cancelled');clearInterval(armT);
         $('#bookWrap').innerHTML=`<div class="ok-box"><h3>Booking cancelled</h3><p>Your booking <b>${esc(b.id)}</b> (${esc(b.itemName)}, ${esc(b.date)}, ${esc(b.slot)}) has been cancelled. There is no charge.</p><p class="muted">Need us later? You can book again any time.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn red" id="bAgain2">Book another</button><a class="btn ghost" href="#home">Back to home</a></div></div>`;
         const ba2=$('#bAgain2');if(ba2)ba2.addEventListener('click',resetBookingForm);window.scrollTo(0,0);
       }catch(e){bc.disabled=false;disarm();const hh=$('#bCancelHint');if(hh)hh.textContent='We could not cancel online \u2014 the 1-hour window may have passed. Please call us on 72046 38853 to cancel.'}
@@ -737,6 +778,8 @@ function bindReviewForm(){
   });
 }
 bindReviewForm();
+
+const tg=$('#tGo');if(tg)tg.addEventListener('click',trackLookup);
 
 /* ---------- admin ---------- */
 const statusList=['pending','confirmed','completed','cancelled'];
@@ -823,7 +866,7 @@ $('#admTabs').addEventListener('click',e=>{const b=e.target.closest('button');if
 $('#admBody').addEventListener('change',async e=>{
   const t=e.target;
   if(t.id==='fSt'){S.filter=t.value;renderAdmin()}
-  if(t.dataset.st){try{await S.store.update('bookings',t.dataset.st,{status:t.value});toast('Status updated')}catch(x){toast('Could not update')}}
+  if(t.dataset.st){try{await S.store.update('bookings',t.dataset.st,{status:t.value});const bb=S.bookings.find(x=>x.id===t.dataset.st);if(bb)syncLookup(Object.assign({},bb,{status:t.value}));toast('Status updated')}catch(x){toast('Could not update')}}
   if(t.dataset.f){const p=draft[+t.dataset.i];p[t.dataset.f]=t.dataset.f==='active'?t.checked:(t.dataset.f==='price'?Math.max(0,+t.value||0):t.value)}
 });
 $('#admBody').addEventListener('input',e=>{if(e.target.id==='fQ'){S.q=e.target.value;const pos=e.target.selectionStart;$('#admBody').innerHTML=bookingsTab();const i=$('#fQ');i.focus();i.setSelectionRange(pos,pos)}});
