@@ -638,6 +638,9 @@ let BOOK_HTML=null;
 const mapUrl=(la,lo)=>`https://www.google.com/maps?q=${la},${lo}`;
 const newId=()=>'RK-'+Date.now().toString(36).slice(-5).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase();
 const waText=b=>`New booking ${b.id}\n${b.kind==='system'?'New system':'Service'}: ${b.itemName} (${inr(b.price)})\nName: ${b.name}\nPhone: ${b.phone}\nDate: ${b.date}, ${b.slot}\nAddress: ${b.address}\nMap: ${b.mapUrl||'not shared'}${b.notes?'\nNotes: '+b.notes:''}`;
+const CMB_KEY='';
+const notifyAdmin=t=>{if(!CMB_KEY)return;try{const i=new Image();i.src='https://api.callmebot.com/whatsapp.php?phone=917204638853&text='+encodeURIComponent(t)+'&apikey='+CMB_KEY;}catch(e){}};
+const waCancelText=b=>`Booking CANCELLED ${b.id}\n${b.kind==='system'?'New system':'Service'}: ${b.itemName} (${inr(b.price)})\nName: ${b.name}\nPhone: ${b.phone}\nDate: ${b.date}, ${b.slot}\nAddress: ${b.address}`;
 const fmtD=d=>{try{return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}catch(e){return d}};
 const isHoliday=d=>!!d&&S.holidays.includes(d);
 function updHolHint(){const h=document.querySelector('#holHint');if(!h)return;const t=day(new Date());const up=S.holidays.filter(d=>d>=t).sort();h.textContent=up.length?('Please note: we are closed on '+up.slice(0,6).map(fmtD).join(', ')+(up.length>6?(' and '+(up.length-6)+' more dates'):'')):''}
@@ -686,14 +689,28 @@ async function submitBooking(){
     err.textContent='We could not save your booking. Check your connection and tap Confirm booking again.';
     return;
   }
-  const wa=`https://wa.me/${PHONE}?text=${encodeURIComponent(waText(b))}`;
+  notifyAdmin(waText(b));
   $('#bookWrap').innerHTML=`<div class="ok-box"><h3>\u2713 Booking confirmed</h3>
     <p style="font-size:1.1rem">Your booking ID is <b>${esc(b.id)}</b>. Keep it for your reference.</p>
     <p><b>${esc(b.itemName)}</b> (${inr(b.price)})<br>${esc(b.date)}, ${esc(b.slot)}<br>${esc(b.name)} \u00b7 ${esc(b.phone)}<br><span class="muted">${esc(b.address)}</span></p>
-    <p class="muted">Your booking is saved. Now tap the green button to send it to us on WhatsApp \u2014 we confirm the visit on call or WhatsApp.</p>
-    <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn wa" href="${wa}" target="_blank" rel="noopener">Send booking on WhatsApp</a><button type="button" class="btn red" id="bAgain">Book another</button><a class="btn ghost" href="#home">Back to home</a></div></div>`;
+    <p class="muted">RK System has received your booking and will call you on ${esc(b.phone)} to confirm the visit.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn red" id="bAgain">Book another</button><a class="btn ghost" href="#home">Back to home</a><button type="button" class="btn ghost" id="bCancel">Cancel this booking</button></div>
+    <p class="hint" id="bCancelHint">Changed your mind? You can cancel free within 1 hour of booking (until ${new Date(b.createdAt+3600000).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})}).</p></div>`;
   const ba=$('#bAgain');if(ba)ba.addEventListener('click',resetBookingForm);
-  setTimeout(()=>{try{window.open(wa,'_blank','noopener')}catch(e){}},700);
+  const bc=$('#bCancel');
+  if(bc){let armed=false;const left=()=>3600000-(Date.now()-(b.createdAt||Date.now()));
+    const disarm=()=>{armed=false;bc.textContent='Cancel this booking';bc.classList.remove('red')};
+    const tick=()=>{if(left()<=0){bc.disabled=true;bc.textContent='Cancel window passed';const hh=$('#bCancelHint');if(hh)hh.textContent='The free 1-hour cancel window has passed. To cancel, please call us on 72046 38853.';}};
+    const armT=setInterval(tick,20000);tick();
+    bc.addEventListener('click',async()=>{
+      if(left()<=0){tick();return}
+      if(!armed){armed=true;bc.textContent='Tap again to confirm cancel';bc.classList.add('red');setTimeout(()=>{if(armed)disarm()},5000);return}
+      bc.disabled=true;bc.textContent='Cancelling\u2026';
+      try{await S.store.update('bookings',b.id,{status:'cancelled'});notifyAdmin(waCancelText(b));clearInterval(armT);
+        $('#bookWrap').innerHTML=`<div class="ok-box"><h3>Booking cancelled</h3><p>Your booking <b>${esc(b.id)}</b> (${esc(b.itemName)}, ${esc(b.date)}, ${esc(b.slot)}) has been cancelled. There is no charge.</p><p class="muted">Need us later? You can book again any time.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn red" id="bAgain2">Book another</button><a class="btn ghost" href="#home">Back to home</a></div></div>`;
+        const ba2=$('#bAgain2');if(ba2)ba2.addEventListener('click',resetBookingForm);window.scrollTo(0,0);
+      }catch(e){bc.disabled=false;disarm();const hh=$('#bCancelHint');if(hh)hh.textContent='We could not cancel online \u2014 the 1-hour window may have passed. Please call us on 72046 38853 to cancel.'}
+    });}
   window.scrollTo(0,0);
 }
 initBookingForm();
