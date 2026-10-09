@@ -670,7 +670,7 @@ async function trackLookup(){
     const d=await S.store.get('byPhone',hashPw('track:'+phone));
     const list=d&&Array.isArray(d.entries)?d.entries:[];
     if(!list.length){err.textContent='No bookings found for this mobile number. Please check the number, or call us on 72046 38853 and we will find it for you.';return}
-    res.innerHTML=list.map(e=>{const canCancel=e.status==='pending'&&(Date.now()-(e.createdAt||0))<3600000;return `<div class="ok-box" style="text-align:left;margin-bottom:14px"><h3 style="margin-bottom:8px">${esc(e.itemName)} <span class="st s-${esc(e.status)}">${esc(e.status)}</span></h3><p><b>${inr(e.price)}</b><br>${esc(e.date)}, ${esc(e.slot)}<br><span class="muted">Booking ID ${esc(e.id)}</span></p>${e.status==='pending'?'<p class="muted">We have your booking and will call you to confirm the visit.</p>':''}${canCancel?`<div style="margin-top:12px"><button type="button" class="btn ghost" data-tcancel="${esc(e.id)}">Cancel this booking</button><p class="hint">Free cancellation is available within 1 hour of booking.</p></div>`:''}</div>`}).join('');
+    res.innerHTML=list.map(e=>{const canCancel=e.status==='pending'&&(Date.now()-(e.createdAt||0))<3600000;return `<div class="ok-box" style="text-align:left;margin-bottom:14px"><h3 style="margin-bottom:8px">${esc(e.itemName)} <span class="st s-${esc(e.status)}">${esc(e.status)}</span></h3><p><b>${inr(e.price)}</b><br>${esc(e.date)}, ${esc(e.slot)}<br><span class="muted">Booking ID ${esc(e.id)} \u00b7 Booked on ${fmtWhen(e.createdAt)}</span></p>${e.status==='pending'?'<p class="muted">We have your booking and will call you to confirm the visit.</p>':''}${canCancel?`<div style="margin-top:12px"><button type="button" class="btn ghost" data-tcancel="${esc(e.id)}">Cancel this booking</button><p class="hint">Free cancellation is available within 1 hour of booking.</p></div>`:''}</div>`}).join('');
     res.querySelectorAll('[data-tcancel]').forEach(tc=>{let armed=false;tc.addEventListener('click',async()=>{
       if(!armed){armed=true;tc.textContent='Tap again to confirm cancel';tc.classList.add('red');setTimeout(()=>{if(armed){armed=false;tc.textContent='Cancel this booking';tc.classList.remove('red')}},5000);return}
       const id=tc.dataset.tcancel;tc.disabled=true;tc.textContent='Cancelling\u2026';
@@ -681,6 +681,7 @@ async function trackLookup(){
   finally{btn.disabled=false;btn.textContent='See my booking'}
 }
 const fmtD=d=>{try{return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}catch(e){return d}};
+const fmtWhen=ts=>{try{return new Date(ts||0).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true})}catch(e){return ''}};
 const isHoliday=d=>!!d&&S.holidays.includes(d);
 function updHolHint(){const h=document.querySelector('#holHint');if(!h)return;const t=day(new Date());const up=S.holidays.filter(d=>d>=t).sort();h.textContent=up.length?('Please note: we are closed on '+up.slice(0,6).map(fmtD).join(', ')+(up.length>6?(' and '+(up.length-6)+' more dates'):'')):''}
 function initBookingForm(){
@@ -732,7 +733,7 @@ async function submitBooking(){
   $('#bookWrap').innerHTML=`<div class="ok-box"><h3>\u2713 Booking confirmed</h3>
     <p style="font-size:1.1rem">Your booking ID is <b>${esc(b.id)}</b>. Keep it for your reference.</p>
     <p><b>${esc(b.itemName)}</b> (${inr(b.price)})<br>${esc(b.date)}, ${esc(b.slot)}<br>${esc(b.name)} \u00b7 ${esc(b.phone)}<br><span class="muted">${esc(b.address)}</span></p>
-    <p class="muted">RK System has received your booking and will call you on ${esc(b.phone)} to confirm the visit.</p>
+    <p class="muted">Booked on ${fmtWhen(b.createdAt)}. RK System has received your booking and will call you on ${esc(b.phone)} to confirm the visit.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn red" id="bAgain">Book another</button><a class="btn ghost" href="#home">Back to home</a><button type="button" class="btn ghost" id="bCancel">Cancel this booking</button></div>
     <p class="hint" id="bCancelHint">Changed your mind? You can cancel free within 1 hour of booking (until ${new Date(b.createdAt+3600000).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})}).</p><p class="hint">Tip: keep your booking ID. On the <a href="#track">Track booking</a> page you can see this booking any time with just your mobile number.</p></div>`;
   const ba=$('#bAgain');if(ba)ba.addEventListener('click',resetBookingForm);
@@ -807,7 +808,7 @@ function bookingsTab(){
   const bar=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px"><select class="in" id="fSt" style="width:auto" aria-label="Filter by status"><option value="all">All statuses</option>${statusList.map(s=>`<option ${S.filter===s?'selected':''}>${s}</option>`).join('')}</select><input class="in" id="fQ" style="max-width:260px" placeholder="Search name, phone, ID" value="${esc(S.q)}"></div>`;
   if(!B.length)return bar+'<div class="empty">No bookings match.</div>';
   return bar+`<div class="tw"><table><thead><tr><th>ID</th><th>Customer</th><th>Item</th><th>When</th><th>Where</th><th>Status</th><th></th></tr></thead><tbody>${B.map(b=>`<tr>
-  <td><b>${esc(b.id)}</b><br><span class="hint">${new Date(b.createdAt||0).toLocaleDateString('en-IN')}</span></td>
+  <td><b>${esc(b.id)}</b><br><span class="hint">Booked ${fmtWhen(b.createdAt)}</span></td>
   <td>${esc(b.name)}<br><a href="tel:+91${esc(b.phone)}">${esc(b.phone)}</a></td>
   <td>${esc(b.itemName)}<br><b>${inr(b.price)}</b></td>
   <td>${esc(b.date)}<br><span class="hint">${esc(b.slot)}</span></td>
