@@ -380,6 +380,7 @@ footer .lbtn{background:none;border:0;color:var(--on-band);opacity:.9;text-decor
       </div>
       <div class="two">
         <label class="f">Preferred date<input class="in" type="date" id="bDate"></label>
+        <p class="hint" id="holHint" style="grid-column:1/-1;margin:0"></p>
         <label class="f">Time slot<select class="in" id="bSlot"><option>Morning (9am to 12pm)</option><option>Afternoon (12pm to 4pm)</option><option>Evening (4pm to 7pm)</option></select></label>
       </div>
       <label class="f">Notes (optional)<textarea class="in" id="bNotes" maxlength="300" placeholder="Tank size, pump HP, what is not working"></textarea></label>
@@ -528,13 +529,13 @@ function makeLive(db){
 }
 
 /* ---------- state ---------- */
-const S={store:makeLocal(),products:DEFAULTS.slice(),bookings:[],reviews:[],priceLog:[],authed:false,canAdmin:false,authHash:null,booting:true,tab:'overview',unsubs:[],filter:'all',q:'',loc:null,rate:0,fails:0,lockUntil:0};
+const S={store:makeLocal(),products:DEFAULTS.slice(),bookings:[],reviews:[],priceLog:[],holidays:[],authed:false,canAdmin:false,authHash:null,booting:true,tab:'overview',unsubs:[],filter:'all',q:'',loc:null,rate:0,fails:0,lockUntil:0};
 const liveProducts=()=>S.products.filter(p=>p.active!==false);
 function subscribe(){
   S.unsubs.forEach(u=>u());S.unsubs=[];
   S.unsubs.push(S.store.watch('config',l=>{
     const d=l.find(x=>x.id==='products');S.products=d&&Array.isArray(d.items)&&d.items.length?d.items:DEFAULTS.slice();
-    const a=l.find(x=>x.id==='auth');S.authHash=a&&a.hash?a.hash:null;renderAll()}));
+    const a=l.find(x=>x.id==='auth');S.authHash=a&&a.hash?a.hash:null;const hd=l.find(x=>x.id==='holidays');S.holidays=hd&&Array.isArray(hd.dates)?hd.dates.slice():[];renderAll();updHolHint()}));
   S.unsubs.push(S.store.watch('reviews',l=>{S.reviews=l;renderAll()}));
   if(S.authed){
     S.unsubs.push(S.store.watch('bookings',l=>{S.bookings=l;renderAll()}));
@@ -635,9 +636,12 @@ let BOOK_HTML=null;
 const mapUrl=(la,lo)=>`https://www.google.com/maps?q=${la},${lo}`;
 const newId=()=>'RK-'+Date.now().toString(36).slice(-5).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase();
 const waText=b=>`New booking ${b.id}\n${b.kind==='system'?'New system':'Service'}: ${b.itemName} (${inr(b.price)})\nName: ${b.name}\nPhone: ${b.phone}\nDate: ${b.date}, ${b.slot}\nAddress: ${b.address}\nMap: ${b.mapUrl||'not shared'}${b.notes?'\nNotes: '+b.notes:''}`;
+const fmtD=d=>{try{return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}catch(e){return d}};
+const isHoliday=d=>!!d&&S.holidays.includes(d);
+function updHolHint(){const h=document.querySelector('#holHint');if(!h)return;const t=day(new Date());const up=S.holidays.filter(d=>d>=t).sort();h.textContent=up.length?('Please note: we are closed on '+up.slice(0,6).map(fmtD).join(', ')+(up.length>6?(' and '+(up.length-6)+' more dates'):'')):''}
 function initBookingForm(){
   if(!BOOK_HTML)BOOK_HTML=$('#bookWrap').innerHTML;
-  const today=new Date();const bd=$('#bDate');if(bd){bd.min=day(today);bd.value=day(new Date(today.getTime()+864e5))}
+  const today=new Date();const bd=$('#bDate');if(bd){bd.min=day(today);bd.value=day(new Date(today.getTime()+864e5));bd.addEventListener('change',()=>{const e2=$('#bErr');if(e2)e2.textContent=isHoliday(bd.value)?('Sorry, we are closed on '+fmtD(bd.value)+' (holiday). Please choose another date.'):''})}updHolHint();
   const lb=$('#locBtn');
   if(lb)lb.addEventListener('click',()=>{
     const m=$('#locMsg');
@@ -668,6 +672,7 @@ async function submitBooking(){
   if(!/^[6-9]\d{9}$/.test(phone)){err.textContent='Enter a 10 digit mobile number starting with 6 to 9.';return}
   if(addr.length<8){err.textContent='Enter your full address.';return}
   if(!$('#bDate').value){err.textContent='Choose a date.';return}
+  if(isHoliday($('#bDate').value)){err.textContent='Sorry, we are closed on '+fmtD($('#bDate').value)+' (holiday). Please choose another date.';return}
   const mu=S.loc?mapUrl(S.loc.lat,S.loc.lng):(/^https?:\/\//.test(link)?link:'');
   const b={id:newId(),kind:p.kind,itemId:p.id,itemName:p.name,price:p.price,name,phone,address:addr,lat:S.loc?S.loc.lat:null,lng:S.loc?S.loc.lng:null,mapUrl:mu,date:$('#bDate').value,slot:$('#bSlot').value,notes:$('#bNotes').value.trim(),status:'pending',createdAt:Date.now()};
   const sb=$('#bSubmit');sb.disabled=true;sb.textContent='Saving your booking\u2026';
@@ -774,8 +779,13 @@ function reviewsTab(){
   <td>${esc(r.bookingId)}<br><span class="hint">${bk?'Found, '+esc(bk.status):'Not found'}</span></td>
   <td style="white-space:nowrap">${r.approved?`<button class="btn ghost sm" data-hide="${esc(r.id)}">Hide</button>`:`<button class="btn sm" data-appr="${esc(r.id)}">Approve</button>`} <button class="btn ghost sm" data-delr="${esc(r.id)}">Delete</button></td></tr>`}).join('')}</tbody></table></div>`;
 }
+function holidaysCard(){
+  const hs=S.holidays.slice().sort();
+  const rows=hs.length?hs.map(d=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #eee"><span>'+fmtD(d)+'</span><button class="btn ghost sm" data-holdel="'+d+'">Remove</button></div>').join(''):'<p class="hint">No holidays added yet.</p>';
+  return '<div class="card" style="max-width:480px;margin-bottom:16px"><h3 style="margin-bottom:6px">Holidays (no bookings)</h3><p class="hint" style="margin-bottom:14px">Customers cannot book on a holiday date. Add the dates you are closed.</p><div class="form"><label class="f">Holiday date<input class="in" type="date" id="holDate"></label><p class="err" id="holErr" role="alert"></p><button class="btn" data-act="addhol">Add holiday</button></div><div style="margin-top:10px">'+rows+'</div></div>';
+}
 function settingsTab(){
-  return `<div class="card" style="max-width:480px"><h3 style="margin-bottom:6px">Change password</h3>
+  return holidaysCard()+`<div class="card" style="max-width:480px"><h3 style="margin-bottom:6px">Change password</h3>
   <p class="hint" style="margin-bottom:14px">The first password is <b>RK@Admin2026</b>. Change it now.</p>
   <div class="form"><label class="f">Current password<input class="in" type="password" id="pwOld" autocomplete="current-password"></label>
   <label class="f">New password (8 or more characters)<input class="in" type="password" id="pwNew" autocomplete="new-password"></label>
@@ -787,7 +797,7 @@ function renderAdmin(){
   if(!S.authed)return;
   admBanner();
   $$('#admTabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===S.tab));
-  const a=document.activeElement;if(a&&$('#admBody').contains(a)&&(a.id==='fQ'||a.dataset.f||a.type==='password'||a.id==='nName'||a.id==='nPrice'))return;
+  const a=document.activeElement;if(a&&$('#admBody').contains(a)&&(a.id==='fQ'||a.dataset.f||a.type==='password'||a.id==='nName'||a.id==='nPrice'||a.id==='holDate'))return;
   $('#admBody').innerHTML=({overview,bookings:bookingsTab,prices:pricesTab,reviews:reviewsTab,settings:settingsTab}[S.tab])();
 }
 $('#admTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b){S.tab=b.dataset.t;draft=null;renderAdmin()}});
@@ -804,6 +814,7 @@ $('#admBody').addEventListener('click',async e=>{
   if(t.dataset.del&&confirm('Delete this booking?')){await S.store.del('bookings',t.dataset.del);toast('Deleted')}
   if(t.dataset.ask){const b=S.bookings.find(x=>x.id===t.dataset.ask);const link=location.href.split('#')[0]+'#review='+b.id;
     window.open(`https://wa.me/91${b.phone}?text=${encodeURIComponent(`Hi ${b.name}, thank you for choosing RK System. Please rate our service (booking ${b.id}): ${link}`)}`,'_blank','noopener')}
+  if(t.dataset.holdel){const list=S.holidays.filter(d=>d!==t.dataset.holdel);await S.store.set('config','holidays',{dates:list,updatedAt:Date.now()});S.holidays=list;$('#admBody').innerHTML=settingsTab();toast('Holiday removed')}
   if(t.dataset.appr){await S.store.update('reviews',t.dataset.appr,{approved:true});toast('Approved')}
   if(t.dataset.hide){await S.store.update('reviews',t.dataset.hide,{approved:false});toast('Hidden')}
   if(t.dataset.delr&&confirm('Delete this review?'))await S.store.del('reviews',t.dataset.delr);
@@ -816,6 +827,12 @@ $('#admBody').addEventListener('click',async e=>{
     const old=Object.fromEntries(S.products.map(p=>[p.id,p]));
     for(const p of draft){const o=old[p.id];if(o&&o.price!==p.price)await S.store.set('priceLog','pl-'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),{itemId:p.id,name:p.name,from:o.price,to:p.price,at:Date.now()})}
     await S.store.set('config','products',{items:draft,updatedAt:Date.now()});draft=null;toast('Prices saved');
+  }
+  if(a==='addhol'){
+    const herr=$('#holErr'),hv=$('#holDate')?$('#holDate').value:'';if(herr)herr.textContent='';
+    if(!hv){if(herr)herr.textContent='Choose a date first.'}
+    else if(S.holidays.includes(hv)){if(herr)herr.textContent='That date is already a holiday.'}
+    else{const list=S.holidays.concat([hv]).sort();await S.store.set('config','holidays',{dates:list,updatedAt:Date.now()});S.holidays=list;$('#admBody').innerHTML=settingsTab();toast('Holiday added - bookings closed on '+fmtD(hv))}
   }
   if(a==='changepw'){
     const err=$('#pwErr'),o=$('#pwOld').value,n=$('#pwNew').value,n2=$('#pwNew2').value;err.textContent='';
