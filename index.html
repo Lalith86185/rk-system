@@ -4,6 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RK System – Automatic Water Level Controllers</title>
+<meta name="description" content="RK System – automatic water level controllers with indicator. RK Deluxe with AC sensing and overhead + sump level lights. Book installation, repair or annual maintenance online, or call 72046 38853.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://lalith86185.github.io/rk-system/">
+<meta name="theme-color" content="#1F2A8C">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231F2A8C'/%3E%3Cpath d='M32 10c8 10 14 17.6 14 26a14 14 0 1 1-28 0c0-8.4 6-16 14-26z' fill='%2300AEEF'/%3E%3Ccircle cx='32' cy='38' r='5' fill='white'/%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RK System">
+<meta property="og:title" content="RK System – Automatic Water Level Controllers">
+<meta property="og:description" content="The tank fills itself. You stop checking. RK Deluxe automatic water level controller with indicator – book installation, repair or AMC online, or call 72046 38853.">
+<meta property="og:url" content="https://lalith86185.github.io/rk-system/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RK System – Automatic Water Level Controllers">
+<meta name="twitter:description" content="Automatic water level controllers with indicator. Book a new system or a service visit online. Call 72046 38853.">
+<meta name="google-site-verification" content="-PYx7HbqxXyai3SnDEB8_NvZnBrejsxFjwspmRYSUfE">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"LocalBusiness","name":"RK System","description":"Manufacturer of automatic water level controllers with indicator.","url":"https://lalith86185.github.io/rk-system/","telephone":"+91-7204638853","priceRange":"₹250 - ₹1,800","makesOffer":[{"@type":"Offer","itemOffered":{"@type":"Product","name":"RK Deluxe Water Level Controller"},"price":"1800","priceCurrency":"INR"},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Installation or inspection visit"},"price":"300","priceCurrency":"INR"},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Repair and troubleshooting"},"price":"250","priceCurrency":"INR"},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Annual maintenance (AMC)"},"price":"1200","priceCurrency":"INR"}]}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -440,6 +457,10 @@ footer .lbtn{background:none;border:0;color:var(--on-band);opacity:.9;text-decor
 </div>
 
 <script>
+window.__rkReady=new Promise(function(res){window.__rkResolve=res;setTimeout(function(){res(null)},8000)});
+</script>
+<script type="module" src="firebase.js"></script>
+<script>
 (function(){
 'use strict';
 const PHONE='917204638853';
@@ -533,7 +554,7 @@ function route(){
   const cur=$(`[data-nav="${anchor||h}"]`);if(cur)cur.setAttribute('aria-current','page');
   if(anchor){const el=document.getElementById(anchor);if(el)el.scrollIntoView()}else window.scrollTo(0,0);
   if(h==='admin')renderAdmin();
-  if(h==='login'){$('#lNote').textContent=S.store.live?'Sign in to claude.ai with the owner account first, then enter the dashboard password.':'';setTimeout(()=>{const i=$('#lPw');if(i)i.focus()},50)}
+  if(h==='login'){$('#lNote').textContent='';setTimeout(()=>{const i=$('#lPw');if(i)i.focus()},50)}
 }
 window.addEventListener('hashchange',route);
 function authUI(){
@@ -543,12 +564,16 @@ function authUI(){
 
 /* ---------- login / logout ---------- */
 function setSession(v){try{v?sessionStorage.setItem('rk_admin','1'):sessionStorage.removeItem('rk_admin')}catch(e){}}
-$('#loginForm').addEventListener('submit',e=>{
+$('#loginForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const err=$('#lErr'),pw=$('#lPw').value,now=Date.now();
   if(S.lockUntil>now){err.textContent=`Too many attempts. Try again in ${Math.ceil((S.lockUntil-now)/1000)} seconds.`;return}
-  if(S.store.live&&!S.canAdmin){err.textContent='This claude.ai account is not an editor of this page. Sign in with the owner account.';return}
   if(!pw){err.textContent='Enter the password.';return}
+  if(S.store.live&&S.liveAuth){
+    try{await S.liveAuth.signIn(pw);S.fails=0;err.textContent='';$('#lPw').value='';toast('Logged in');location.hash='#admin';}
+    catch(x){S.fails++;if(S.fails>=5){S.lockUntil=now+30000;S.fails=0;err.textContent='Too many attempts. Wait 30 seconds.'}else err.textContent='Wrong password.';$('#lPw').value='';}
+    return;
+  }
   if(hashPw(pw)!==(S.authHash||DEFAULT_HASH)){
     S.fails++;if(S.fails>=5){S.lockUntil=now+30000;S.fails=0;err.textContent='Too many attempts. Wait 30 seconds.'}else err.textContent='Wrong password.';
     $('#lPw').value='';return}
@@ -556,6 +581,7 @@ $('#loginForm').addEventListener('submit',e=>{
   S.authed=true;setSession(true);authUI();subscribe();location.hash='#admin';route();toast('Logged in');
 });
 function logout(){
+  if(S.liveAuth){try{S.liveAuth.signOut()}catch(e){}}
   S.authed=false;setSession(false);S.bookings=[];S.priceLog=[];draft=null;S.tab='overview';S.q='';S.filter='all';
   authUI();subscribe();location.hash='#home';route();toast('Logged out');
 }
@@ -588,9 +614,10 @@ function renderReviewsPublic(){
   $('#avgBox').innerHTML=a.length?`<b>${avg.toFixed(1)}</b><span><span class="star-static">${stars(Math.round(avg))}</span><br><span class="hint">${a.length} review${a.length>1?'s':''}</span></span>`:'';
 }
 function fillItems(){
-  const kind=($('input[name=kind]:checked')||{}).value||'system',cur=$('#bItem').value;
-  $('#bItem').innerHTML=liveProducts().filter(p=>p.kind===kind).map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${inr(p.price)})</option>`).join('');
-  if(cur&&[...$('#bItem').options].some(o=>o.value===cur))$('#bItem').value=cur;
+  const bi=$('#bItem');if(!bi)return;
+  const kind=($('input[name=kind]:checked')||{}).value||'system',cur=bi.value;
+  bi.innerHTML=liveProducts().filter(p=>p.kind===kind).map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${inr(p.price)})</option>`).join('');
+  if(cur&&[...bi.options].some(o=>o.value===cur))bi.value=cur;
 }
 $$('input[name=kind]').forEach(r=>r.addEventListener('change',fillItems));
 document.addEventListener('click',e=>{
@@ -601,22 +628,35 @@ document.addEventListener('click',e=>{
 });
 
 /* ---------- booking ---------- */
-const today=new Date();$('#bDate').min=day(today);$('#bDate').value=day(new Date(today.getTime()+864e5));
+let BOOK_HTML=null;
 const mapUrl=(la,lo)=>`https://www.google.com/maps?q=${la},${lo}`;
-$('#locBtn').addEventListener('click',()=>{
-  const m=$('#locMsg');
-  if(!navigator.geolocation){m.textContent='This browser cannot share location. Paste a Google Maps link instead.';return}
-  m.textContent='Finding your location…';
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const {latitude:la,longitude:lo,accuracy:ac}=pos.coords;
-    S.loc={lat:+la.toFixed(6),lng:+lo.toFixed(6),acc:Math.round(ac)};
-    $('#locBox').classList.add('ok');
-    m.innerHTML=`Location added (accurate to about ${S.loc.acc} m). <a href="${mapUrl(S.loc.lat,S.loc.lng)}" target="_blank" rel="noopener">Check on Google Maps</a>`;
-  },()=>{m.textContent='Location was blocked. Allow location in your browser, or paste a Google Maps link below.'},{enableHighAccuracy:true,timeout:15000});
-});
 const newId=()=>'RK-'+Date.now().toString(36).slice(-5).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase();
 const waText=b=>`New booking ${b.id}\n${b.kind==='system'?'New system':'Service'}: ${b.itemName} (${inr(b.price)})\nName: ${b.name}\nPhone: ${b.phone}\nDate: ${b.date}, ${b.slot}\nAddress: ${b.address}\nMap: ${b.mapUrl||'not shared'}${b.notes?'\nNotes: '+b.notes:''}`;
-$('#bSubmit').addEventListener('click',async()=>{
+function initBookingForm(){
+  if(!BOOK_HTML)BOOK_HTML=$('#bookWrap').innerHTML;
+  const today=new Date();const bd=$('#bDate');if(bd){bd.min=day(today);bd.value=day(new Date(today.getTime()+864e5))}
+  const lb=$('#locBtn');
+  if(lb)lb.addEventListener('click',()=>{
+    const m=$('#locMsg');
+    if(!navigator.geolocation){m.textContent='This browser cannot share location. Paste a Google Maps link instead.';return}
+    m.textContent='Finding your location\u2026';
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const {latitude:la,longitude:lo,accuracy:ac}=pos.coords;
+      S.loc={lat:+la.toFixed(6),lng:+lo.toFixed(6),acc:Math.round(ac)};
+      $('#locBox').classList.add('ok');
+      m.innerHTML=`Location added (accurate to about ${S.loc.acc} m). <a href="${mapUrl(S.loc.lat,S.loc.lng)}" target="_blank" rel="noopener">Check on Google Maps</a>`;
+    },()=>{m.textContent='Location was blocked. Allow location in your browser, or paste a Google Maps link below.'},{enableHighAccuracy:true,timeout:15000});
+  });
+  $$('input[name=kind]').forEach(r=>r.addEventListener('change',fillItems));
+  const sb=$('#bSubmit');if(sb)sb.addEventListener('click',submitBooking);
+  fillItems();
+}
+function resetBookingForm(){
+  if(!BOOK_HTML)return;
+  $('#bookWrap').innerHTML=BOOK_HTML;S.loc=null;initBookingForm();
+  if(location.hash!=='#book')location.hash='#book';route();window.scrollTo(0,0);
+}
+async function submitBooking(){
   const err=$('#bErr');err.textContent='';
   const p=S.products.find(x=>x.id===$('#bItem').value);
   const name=$('#bName').value.trim(),phone=$('#bPhone').value.trim(),addr=$('#bAddr').value.trim(),link=$('#bMapLink').value.trim();
@@ -627,32 +667,49 @@ $('#bSubmit').addEventListener('click',async()=>{
   if(!$('#bDate').value){err.textContent='Choose a date.';return}
   const mu=S.loc?mapUrl(S.loc.lat,S.loc.lng):(/^https?:\/\//.test(link)?link:'');
   const b={id:newId(),kind:p.kind,itemId:p.id,itemName:p.name,price:p.price,name,phone,address:addr,lat:S.loc?S.loc.lat:null,lng:S.loc?S.loc.lng:null,mapUrl:mu,date:$('#bDate').value,slot:$('#bSlot').value,notes:$('#bNotes').value.trim(),status:'pending',createdAt:Date.now()};
-  $('#bSubmit').disabled=true;let saved=true;
+  const sb=$('#bSubmit');sb.disabled=true;sb.textContent='Saving your booking\u2026';
+  let saved=true;
   try{await S.store.set('bookings',b.id,b)}catch(e){saved=false}
-  $('#bSubmit').disabled=false;
+  if(!saved){
+    sb.disabled=false;sb.textContent='Confirm booking';
+    err.textContent='We could not save your booking. Check your connection and tap Confirm booking again.';
+    return;
+  }
   const wa=`https://wa.me/${PHONE}?text=${encodeURIComponent(waText(b))}`;
-  $('#bookWrap').innerHTML=`<div class="ok-box"><h3>Booking ${esc(b.id)} received</h3>
-    <p>${esc(b.itemName)} on ${esc(b.date)}, ${esc(b.slot)}.</p>
-    ${saved?'':'<p class="err">We could not save this online. Send it on WhatsApp so it reaches us.</p>'}
-    <p class="muted">Tap below to send these details to RK System on WhatsApp. This is the fastest way to get confirmed.</p>
-    <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn wa" href="${wa}" target="_blank" rel="noopener">Send on WhatsApp</a><a class="btn ghost" href="#home">Back to home</a></div>
-    <p class="hint">Keep your booking ID. You will need it to rate our service.</p></div>`;
-});
+  $('#bookWrap').innerHTML=`<div class="ok-box"><h3>\u2713 Booking confirmed</h3>
+    <p style="font-size:1.1rem">Your booking ID is <b>${esc(b.id)}</b>. Keep it \u2014 you will need it to rate our service.</p>
+    <p><b>${esc(b.itemName)}</b> (${inr(b.price)})<br>${esc(b.date)}, ${esc(b.slot)}<br>${esc(b.name)} \u00b7 ${esc(b.phone)}<br><span class="muted">${esc(b.address)}</span></p>
+    <p class="muted">RK System has received your booking and will call you on ${esc(b.phone)} to confirm the visit. You do not need to do anything else.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn red" id="bAgain">Book another</button><a class="btn ghost" href="#home">Back to home</a></div>
+    <p class="hint">Want a faster reply? You can also <a href="${wa}" target="_blank" rel="noopener">send these booking details on WhatsApp</a> \u2014 it is optional.</p></div>`;
+  const ba=$('#bAgain');if(ba)ba.addEventListener('click',resetBookingForm);
+  window.scrollTo(0,0);
+}
+initBookingForm();
 
 /* ---------- reviews ---------- */
-function drawStars(){$('#rStars').innerHTML=[1,2,3,4,5].map(n=>`<button type="button" role="radio" aria-checked="${S.rate===n}" aria-label="${n} star${n>1?'s':''}" class="${S.rate>=n?'on':''}" data-n="${n}">★</button>`).join('')}
-$('#rStars').addEventListener('click',e=>{const b=e.target.closest('button');if(b){S.rate=+b.dataset.n;drawStars()}});drawStars();
-$('#rSubmit').addEventListener('click',async()=>{
-  const err=$('#rErr');err.textContent='';
-  const id=$('#rId').value.trim().toUpperCase(),name=$('#rName').value.trim();
-  if(!/^RK-[A-Z0-9]{4,12}$/.test(id)){err.textContent='Enter the booking ID from your confirmation, like RK-AB12CD.';return}
-  if(name.length<2){err.textContent='Enter your name.';return}
-  if(!S.rate){err.textContent='Choose 1 to 5 stars.';return}
-  const r={bookingId:id,name,rating:S.rate,text:$('#rText').value.trim(),approved:false,createdAt:Date.now()};
-  try{await S.store.set('reviews','rv-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),r);
-    $('#revForm').innerHTML='<div class="ok-box"><h3>Thank you</h3><p>Your rating is saved. It appears on this page once we have checked it.</p></div>';
-  }catch(e){err.textContent='Could not save your rating. Check your connection and try again.'}
-});
+function drawStars(){$('#rStars').innerHTML=[1,2,3,4,5].map(n=>`<button type="button" role="radio" aria-checked="${S.rate===n}" aria-label="${n} star${n>1?'s':''}" class="${S.rate>=n?'on':''}" data-n="${n}">\u2605</button>`).join('')}
+let REV_HTML=null;
+function bindReviewForm(){
+  if(!REV_HTML)REV_HTML=$('#revForm').innerHTML;
+  const rsEl=$('#rStars');
+  if(rsEl)rsEl.addEventListener('click',e=>{const b=e.target.closest('button');if(b){S.rate=+b.dataset.n;drawStars()}});
+  drawStars();
+  const rb=$('#rSubmit');
+  if(rb)rb.addEventListener('click',async()=>{
+    const err=$('#rErr');err.textContent='';
+    const id=$('#rId').value.trim().toUpperCase(),name=$('#rName').value.trim();
+    if(!/^RK-[A-Z0-9]{4,12}$/.test(id)){err.textContent='Enter the booking ID from your confirmation, like RK-AB12CD.';return}
+    if(name.length<2){err.textContent='Enter your name.';return}
+    if(!S.rate){err.textContent='Choose 1 to 5 stars.';return}
+    const r={bookingId:id,name,rating:S.rate,text:$('#rText').value.trim(),approved:false,createdAt:Date.now()};
+    try{await S.store.set('reviews','rv-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),r);
+      $('#revForm').innerHTML=`<div class="ok-box"><h3>Thank you</h3><p>Your rating is saved. It appears on this page once we have checked it.</p><p><button type="button" class="btn ghost" id="rAgain">Rate another service</button></p></div>`;
+      const ra=$('#rAgain');if(ra)ra.addEventListener('click',()=>{$('#revForm').innerHTML=REV_HTML;S.rate=0;bindReviewForm()});
+    }catch(e){err.textContent='Could not save your rating. Check your connection and try again.'}
+  });
+}
+bindReviewForm();
 
 /* ---------- admin ---------- */
 const statusList=['pending','confirmed','completed','cancelled'];
@@ -722,7 +779,7 @@ function settingsTab(){
   <label class="f">Repeat new password<input class="in" type="password" id="pwNew2" autocomplete="new-password"></label>
   <p class="err" id="pwErr" role="alert"></p><button class="btn" data-act="changepw">Save password</button></div></div>`;
 }
-function admBanner(){$('#admBanner').innerHTML=S.store.live?'':'<div class="banner"><b>Demo mode.</b> Data is kept only in this browser. Open the published page while signed in to claude.ai to use shared, saved data.</div>'}
+function admBanner(){$('#admBanner').innerHTML=S.store.live?'':'<div class="banner"><b>Demo mode.</b> Data is kept only in this browser. The live booking system could not be reached, so data is kept only in this browser. Check the connection and reload.</div>'}
 function renderAdmin(){
   if(!S.authed)return;
   admBanner();
@@ -759,9 +816,10 @@ $('#admBody').addEventListener('click',async e=>{
   }
   if(a==='changepw'){
     const err=$('#pwErr'),o=$('#pwOld').value,n=$('#pwNew').value,n2=$('#pwNew2').value;err.textContent='';
-    if(hashPw(o)!==(S.authHash||DEFAULT_HASH)){err.textContent='Current password is wrong.';return}
     if(n.length<8){err.textContent='New password needs 8 or more characters.';return}
     if(n!==n2){err.textContent='The new passwords do not match.';return}
+    if(S.store.live&&S.liveAuth){try{await S.liveAuth.changePassword(o,n);toast('Password changed');$('#admBody').innerHTML=settingsTab();}catch(x){err.textContent='Current password is wrong, or the change was refused. Sign in again and try.'}return}
+    if(hashPw(o)!==(S.authHash||DEFAULT_HASH)){err.textContent='Current password is wrong.';return}
     await S.store.set('config','auth',{hash:hashPw(n),updatedAt:Date.now()});toast('Password changed');$('#admBody').innerHTML=settingsTab();
   }
   if(a==='sample')await addSample();
@@ -785,19 +843,21 @@ async function exportCsv(){
   const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
   const csv=[head.join(',')].concat(S.bookings.map(b=>[b.id,b.date,b.slot,b.status,b.kind,b.itemName,b.price,b.name,b.phone,b.address,b.mapUrl,new Date(b.createdAt||0).toISOString()].map(q).join(','))).join('\n');
   let dl=null;try{dl=window.claude&&await claude.use('downloads')}catch(e){}
-  if(dl)await dl.save({filename:'rk-bookings.csv',data:csv});else toast('Download is not available in this view');
+  if(dl)await dl.save({filename:'rk-bookings.csv',data:csv});else{const u=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));const a=document.createElement('a');a.href=u;a.download='rk-bookings.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Bookings downloaded')}
 }
 
 /* ---------- boot ---------- */
 function renderAll(){renderProducts();renderReviewsPublic();fillItems();if(!$('[data-view=admin]').hidden)renderAdmin()}
 drawLevels();renderAll();authUI();route();subscribe();
 (async()=>{
-  let db=null,user=null;
-  try{if(window.claude&&claude.use){db=await claude.use('db');user=await claude.use('user')}}catch(e){}
-  if(db){S.store=makeLive(db);try{S.canAdmin=!!(user&&await user.canEdit())}catch(e){S.canAdmin=false}}
+  let live=null;
+  try{live=await window.__rkReady}catch(e){}
+  if(live&&live.db){
+    S.store=makeLive(live.db);S.liveAuth=live.auth;S.canAdmin=true;
+    live.auth.onChange(a=>{const was=S.authed;S.authed=a;authUI();subscribe();if(a!==was)route()});
+  }
   S.booting=false;
-  let sess=false;try{sess=sessionStorage.getItem('rk_admin')==='1'}catch(e){}
-  if(sess&&(!S.store.live||S.canAdmin))S.authed=true;
+  if(!S.store.live){let sess=false;try{sess=sessionStorage.getItem('rk_admin')==='1'}catch(e){}if(sess)S.authed=true}
   authUI();subscribe();route();
 })();
 })();
