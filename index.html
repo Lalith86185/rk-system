@@ -401,12 +401,9 @@ footer .lbtn{background:none;border:0;color:var(--on-band);opacity:.9;text-decor
   </div>
   <div class="wrap" style="max-width:640px;margin-top:56px">
     <h2>Rate our service</h2>
-    <p class="muted" style="margin:8px 0 18px">Use the booking ID from your confirmation. Reviews appear after we check them.</p>
+    <p class="muted" style="margin:8px 0 18px">Reviews appear after we check them.</p>
     <div class="form" id="revForm">
-      <div class="two">
-        <label class="f">Booking ID<input class="in" id="rId" placeholder="RK-XXXXXX" maxlength="20"></label>
-        <label class="f">Your name<input class="in" id="rName" maxlength="60"></label>
-      </div>
+      <label class="f">Your name<input class="in" id="rName" maxlength="60"></label>
       <div><b>Your rating</b><div class="stars" id="rStars" role="radiogroup" aria-label="Rating"></div></div>
       <label class="f">Comment<textarea class="in" id="rText" maxlength="400"></textarea></label>
       <p class="err" id="rErr" role="alert"></p>
@@ -691,12 +688,12 @@ async function submitBooking(){
   }
   const wa=`https://wa.me/${PHONE}?text=${encodeURIComponent(waText(b))}`;
   $('#bookWrap').innerHTML=`<div class="ok-box"><h3>\u2713 Booking confirmed</h3>
-    <p style="font-size:1.1rem">Your booking ID is <b>${esc(b.id)}</b>. Keep it \u2014 you will need it to rate our service.</p>
+    <p style="font-size:1.1rem">Your booking ID is <b>${esc(b.id)}</b>. Keep it for your reference.</p>
     <p><b>${esc(b.itemName)}</b> (${inr(b.price)})<br>${esc(b.date)}, ${esc(b.slot)}<br>${esc(b.name)} \u00b7 ${esc(b.phone)}<br><span class="muted">${esc(b.address)}</span></p>
-    <p class="muted">RK System has received your booking and will call you on ${esc(b.phone)} to confirm the visit. You do not need to do anything else.</p>
-    <div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn red" id="bAgain">Book another</button><a class="btn ghost" href="#home">Back to home</a></div>
-    <p class="hint">Want a faster reply? You can also <a href="${wa}" target="_blank" rel="noopener">send these booking details on WhatsApp</a> \u2014 it is optional.</p></div>`;
+    <p class="muted">Your booking is saved. Now tap the green button to send it to us on WhatsApp \u2014 we confirm the visit on call or WhatsApp.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn wa" href="${wa}" target="_blank" rel="noopener">Send booking on WhatsApp</a><button type="button" class="btn red" id="bAgain">Book another</button><a class="btn ghost" href="#home">Back to home</a></div></div>`;
   const ba=$('#bAgain');if(ba)ba.addEventListener('click',resetBookingForm);
+  setTimeout(()=>{try{window.open(wa,'_blank','noopener')}catch(e){}},700);
   window.scrollTo(0,0);
 }
 initBookingForm();
@@ -712,11 +709,10 @@ function bindReviewForm(){
   const rb=$('#rSubmit');
   if(rb)rb.addEventListener('click',async()=>{
     const err=$('#rErr');err.textContent='';
-    const id=$('#rId').value.trim().toUpperCase(),name=$('#rName').value.trim();
-    if(!/^RK-[A-Z0-9]{4,12}$/.test(id)){err.textContent='Enter the booking ID from your confirmation, like RK-AB12CD.';return}
+    const name=$('#rName').value.trim();
     if(name.length<2){err.textContent='Enter your name.';return}
     if(!S.rate){err.textContent='Choose 1 to 5 stars.';return}
-    const r={bookingId:id,name,rating:S.rate,text:$('#rText').value.trim(),approved:false,createdAt:Date.now()};
+    const r={bookingId:'',name,rating:S.rate,text:$('#rText').value.trim(),approved:false,createdAt:Date.now()};
     try{await S.store.set('reviews','rv-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),r);
       $('#revForm').innerHTML=`<div class="ok-box"><h3>Thank you</h3><p>Your rating is saved. It appears on this page once we have checked it.</p><p><button type="button" class="btn ghost" id="rAgain">Rate another service</button></p></div>`;
       const ra=$('#rAgain');if(ra)ra.addEventListener('click',()=>{$('#revForm').innerHTML=REV_HTML;S.rate=0;bindReviewForm()});
@@ -782,7 +778,7 @@ function reviewsTab(){
   if(!R.length)return '<div class="empty">No ratings yet. Use Ask rating on a completed booking.</div>';
   return `<div class="tw"><table style="min-width:640px"><thead><tr><th>Rating</th><th>Customer</th><th>Comment</th><th>Booking</th><th></th></tr></thead><tbody>${R.map(r=>{const bk=S.bookings.find(b=>b.id===r.bookingId);return `<tr>
   <td class="star-static">${stars(r.rating)}</td><td>${esc(r.name)}</td><td>${esc(r.text)}</td>
-  <td>${esc(r.bookingId)}<br><span class="hint">${bk?'Found, '+esc(bk.status):'Not found'}</span></td>
+  <td>${r.bookingId?esc(r.bookingId)+'<br><span class="hint">'+(bk?'Found, '+esc(bk.status):'Not found')+'</span>':'<span class="hint">No ID</span>'}</td>
   <td style="white-space:nowrap">${r.approved?`<button class="btn ghost sm" data-hide="${esc(r.id)}">Hide</button>`:`<button class="btn sm" data-appr="${esc(r.id)}">Approve</button>`} <button class="btn ghost sm" data-delr="${esc(r.id)}">Delete</button></td></tr>`}).join('')}</tbody></table></div>`;
 }
 function holidaysCard(){
