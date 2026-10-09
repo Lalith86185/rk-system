@@ -658,8 +658,9 @@ let BOOK_HTML=null;
 const mapUrl=(la,lo)=>`https://www.google.com/maps?q=${la},${lo}`;
 const newId=()=>'RK-'+Date.now().toString(36).slice(-5).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase();
 const waText=b=>`New booking ${b.id}\n${b.kind==='system'?'New system':'Service'}: ${b.itemName} (${inr(b.price)})\nName: ${b.name}\nPhone: ${b.phone}\nDate: ${b.date}, ${b.slot}\nAddress: ${b.address}\nMap: ${b.mapUrl||'not shared'}${b.notes?'\nNotes: '+b.notes:''}`;
-const CMB_KEY='';
-const notifyAdmin=t=>{if(!CMB_KEY)return;try{const i=new Image();i.src='https://api.callmebot.com/whatsapp.php?phone=917204638853&text='+encodeURIComponent(t)+'&apikey='+CMB_KEY;}catch(e){}};
+const ALERT_URL='https://script.google.com/macros/s/AKfycbxsxs92FNh6UhOHIOj8hWOeoJek_1E6gOcfhxPH9tduhuRoJ4mRXKb17I0Dqtcfzb2rdQ/exec';
+const ALERT_KEY='rk-alerts-9f2c';
+const notifyAdmin=(t,subj)=>{if(!ALERT_URL)return;try{fetch(ALERT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({key:ALERT_KEY,subject:subj||'RK System alert',text:t}),keepalive:true}).catch(()=>{})}catch(e){}};
 const waCancelText=b=>`Booking CANCELLED ${b.id}\n${b.kind==='system'?'New system':'Service'}: ${b.itemName} (${inr(b.price)})\nName: ${b.name}\nPhone: ${b.phone}\nDate: ${b.date}, ${b.slot}\nAddress: ${b.address}`;
 const syncPhone=async(b,st)=>{try{const key=hashPw('track:'+b.phone);const doc=await S.store.get('byPhone',key);const list=doc&&Array.isArray(doc.entries)?doc.entries.slice():[];const e={id:b.id,kind:b.kind,itemName:b.itemName,price:b.price,date:b.date,slot:b.slot,status:st||b.status,createdAt:b.createdAt||Date.now()};const ix=list.findIndex(x=>x.id===b.id);if(ix>=0)list[ix]=e;else list.push(e);list.sort((a,c)=>c.createdAt-a.createdAt);await S.store.set('byPhone',key,{entries:list.slice(0,30)})}catch(e){}};
 async function trackLookup(){
@@ -676,7 +677,7 @@ async function trackLookup(){
     res.querySelectorAll('[data-tcancel]').forEach(tc=>{let armed=false;tc.addEventListener('click',async()=>{
       if(!armed){armed=true;tc.textContent='Tap again to confirm cancel';tc.classList.add('red');setTimeout(()=>{if(armed){armed=false;tc.textContent='Cancel this booking';tc.classList.remove('red')}},5000);return}
       const id=tc.dataset.tcancel;tc.disabled=true;tc.textContent='Cancelling\u2026';
-      try{await S.store.update('bookings',id,{status:'cancelled'});const e2=list.find(x=>x.id===id);const bb={id,kind:e2.kind,itemName:e2.itemName,price:e2.price,date:e2.date,slot:e2.slot,createdAt:e2.createdAt,phone};await syncPhone(bb,'cancelled');notifyAdmin(waCancelText(bb));trackLookup();}
+      try{await S.store.update('bookings',id,{status:'cancelled'});const e2=list.find(x=>x.id===id);const bb={id,kind:e2.kind,itemName:e2.itemName,price:e2.price,date:e2.date,slot:e2.slot,createdAt:e2.createdAt,phone};await syncPhone(bb,'cancelled');notifyAdmin(waCancelText(bb),'Booking CANCELLED '+id);trackLookup();}
       catch(x){tc.disabled=false;tc.textContent='Cancel this booking';tc.classList.remove('red');armed=false;const p=tc.parentElement&&tc.parentElement.querySelector('.hint');if(p)p.textContent='We could not cancel online \u2014 the 1-hour window may have passed. Please call us on 72046 38853 to cancel.'}
     })});
   }catch(e){err.textContent='Could not check right now. Please try again in a moment.'}
@@ -770,7 +771,7 @@ async function submitBooking(){
     err.textContent='We could not save your booking. Check your connection and tap Confirm booking again.';
     return;
   }
-  notifyAdmin(waText(b));syncPhone(b);
+  notifyAdmin(waText(b),'New booking '+b.id+': '+b.itemName);syncPhone(b);
   $('#bookWrap').innerHTML=`<div class="ok-box"><h3>\u2713 Booking confirmed</h3>
     <p style="font-size:1.1rem">Your booking ID is <b>${esc(b.id)}</b>. Keep it for your reference.</p>
     <p><b>${esc(b.itemName)}</b> (${inr(b.price)})<br>${esc(b.date)}, ${esc(b.slot)}<br>${esc(b.name)} \u00b7 ${esc(b.phone)}<br><span class="muted">${esc(b.address)}</span></p>
@@ -787,7 +788,7 @@ async function submitBooking(){
       if(left()<=0){tick();return}
       if(!armed){armed=true;bc.textContent='Tap again to confirm cancel';bc.classList.add('red');setTimeout(()=>{if(armed)disarm()},5000);return}
       bc.disabled=true;bc.textContent='Cancelling\u2026';
-      try{await S.store.update('bookings',b.id,{status:'cancelled'});notifyAdmin(waCancelText(b));syncPhone(b,'cancelled');clearInterval(armT);
+      try{await S.store.update('bookings',b.id,{status:'cancelled'});notifyAdmin(waCancelText(b),'Booking CANCELLED '+b.id);syncPhone(b,'cancelled');clearInterval(armT);
         $('#bookWrap').innerHTML=`<div class="ok-box"><h3>Booking cancelled</h3><p>Your booking <b>${esc(b.id)}</b> (${esc(b.itemName)}, ${esc(b.date)}, ${esc(b.slot)}) has been cancelled. There is no charge.</p><p class="muted">Need us later? You can book again any time.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn red" id="bAgain2">Book another</button><a class="btn ghost" href="#home">Back to home</a></div></div>`;
         const ba2=$('#bAgain2');if(ba2)ba2.addEventListener('click',resetBookingForm);window.scrollTo(0,0);
       }catch(e){bc.disabled=false;disarm();const hh=$('#bCancelHint');if(hh)hh.textContent='We could not cancel online \u2014 the 1-hour window may have passed. Please call us on 72046 38853 to cancel.'}
