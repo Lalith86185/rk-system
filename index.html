@@ -1041,6 +1041,6 @@ window.addEventListener('rk-live',()=>swapLive(window.__rkLive));
 })();
 })();
 </script>
-<script>if('serviceWorker' in navigator&&location.protocol==='https:'){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}</script>
+<script>if('serviceWorker' in navigator&&location.protocol==='https:'){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').then(function(r){if(r)r.update()}).catch(function(){})})}</script>
 </body>
 </html>
