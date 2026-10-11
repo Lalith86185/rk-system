@@ -899,7 +899,7 @@ function bookingsTab(){
   <td>${esc(b.date)}<br><span class="hint">${esc(b.slot)}</span></td>
   <td>${b.mapUrl?`<a href="${esc(b.mapUrl)}" target="_blank" rel="noopener">Open map</a><br>`:''}<span class="hint">${esc((b.address||'').slice(0,40))}</span></td>
   <td><select class="st s-${esc(b.status)}" data-st="${esc(b.id)}" aria-label="Status for ${esc(b.id)}">${statusList.map(s=>`<option ${b.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
-  <td style="white-space:nowrap">${b.status!=='cancelled'?`<button class="btn ghost sm" data-bill="${esc(b.id)}">Bill</button> `:''}${b.status==='completed'?`<button class="btn ghost sm" data-ask="${esc(b.id)}">Ask rating</button> `:''}<a class="btn ghost sm" target="_blank" rel="noopener" href="https://wa.me/91${esc(b.phone)}">WhatsApp</a> <button class="btn ghost sm" data-del="${esc(b.id)}" aria-label="Delete ${esc(b.id)}">Delete</button></td></tr>`).join('')}</tbody></table></div>`;
+  <td style="white-space:nowrap">${b.status==='completed'?`<button class="btn ghost sm" data-ask="${esc(b.id)}">Ask rating</button> `:''}<a class="btn ghost sm" target="_blank" rel="noopener" href="https://wa.me/91${esc(b.phone)}">WhatsApp</a> <button class="btn ghost sm" data-del="${esc(b.id)}" aria-label="Delete ${esc(b.id)}">Delete</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 let draft=null;
 function pricesTab(){
@@ -963,7 +963,6 @@ $('#admBody').addEventListener('click',async e=>{
   const t=e.target.closest('button');if(!t)return;
   try{
   if(t.dataset.del&&confirm('Delete this booking?')){const db0=S.bookings.find(x=>x.id===t.dataset.del);await S.store.del('bookings',t.dataset.del);if(db0&&db0.status!=='cancelled')bumpDay(db0.date,-1);toast('Deleted')}
-  if(t.dataset.bill){const bb2=S.bookings.find(x=>x.id===t.dataset.bill);if(bb2)openBill(bb2)}
   if(t.dataset.ask){const b=S.bookings.find(x=>x.id===t.dataset.ask);const link=location.href.split('#')[0]+'#review='+b.id;
     window.open(`https://wa.me/91${b.phone}?text=${encodeURIComponent(`Hi ${b.name}, thank you for choosing RK System. Please rate our service (booking ${b.id}): ${link}`)}`,'_blank','noopener')}
   if(t.dataset.dldel){const m=Object.assign({},S.dateLimits);delete m[t.dataset.dldel];await S.store.set('config','dateLimits',{map:m,updatedAt:Date.now()});S.dateLimits=m;$('#admBody').innerHTML=settingsTab();toast('Date limit removed')}
