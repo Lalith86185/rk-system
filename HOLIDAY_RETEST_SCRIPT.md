@@ -1,22 +1,21 @@
-# RK System — Holiday Block: Final Live Re-Test Script (~5 min)
+# RK System — Holiday Block: Final Live Re-Test Script (~5 min) — UPDATED 2026-10-11
 
-Why: the holiday fix (admin Settings sets closed dates in config/holidays; the booking form blocks those dates) was deployed on both site copies on 2026-10-09, but the final customer-side live re-test was stopped by the user and is still outstanding — it is the one shipped RK feature never verified end to end. Site health pre-check done by Muse on Sat 2026-10-10 ~12:41 IST: the customer-facing copy at https://rkwaterlevelcontroller.liveblog365.com loads normally (services, prices and booking entry points all present).
+Why: the holiday fix (admin Settings sets closed dates in config/holidays; the booking form blocks those dates) was deployed on 2026-10-09, but the final customer-side live re-test was stopped by the user and is still outstanding — it is the one shipped RK feature never verified end to end.
 
-Use a throwaway test date — tomorrow, Sun 2026-10-11 — so no real customer date is blocked for more than a few minutes. Do all steps in one sitting; do not leave the test holiday in place.
+Changes in this update (2026-10-11):
+- REMOVED the GitHub Pages step. That copy was taken offline on 2026-10-10 at Lalith's instruction (Pages site deleted, https://lalith86185.github.io/rk-system/ verified HTTP 404; repo kept only as code backup). There is now ONE live copy to test: https://rkwaterlevelcontroller.liveblog365.com
+- Test date is no longer hard-coded to 2026-10-11 (that date was "tomorrow" when the script was written on Oct 10). Use tomorrow's date at the time you run the test, and remove it in the same sitting.
 
-## Steps
-1. **Admin:** sign in to the admin panel, open Settings, add **2026-10-11** as a holiday/closed date. Save.
-2. **GitHub Pages copy** (https://lalith86185.github.io/rk-system/): open the booking form, pick any service, choose date **2026-10-11**.
-   - PASS = the date is blocked / cannot be submitted with a closed/holiday message.
+## Steps (one sitting, ~5 min — do not leave the test holiday in place)
+1. **Admin:** sign in to the admin panel, open Settings, add **tomorrow's date** as a holiday/closed date. Save.
+2. **Live site only** (https://rkwaterlevelcontroller.liveblog365.com): open the booking form, pick any service, choose that same date.
+   - PASS = the date is blocked / cannot be submitted, with a closed/holiday message.
    - FAIL = the booking goes through — note the exact behaviour and stop; the fix needs another patch.
-3. **Liveblog365 copy** (https://rkwaterlevelcontroller.liveblog365.com): repeat step 2.
-   - PASS = blocked the same way.
-4. **Remove the test holiday** in admin Settings (delete 2026-10-11) and save.
-5. **Confirm recovery:** on either copy, start a booking for 2026-10-11 again — the date must now be selectable. You do not need to submit it; if you do submit a test booking, cancel it within the free 1-hour window and delete the test entry from the admin panel afterwards.
+3. **Remove the test holiday** in admin Settings and save.
+4. **Confirm recovery:** start a booking for that date again — it must now be selectable. You do not need to submit it; if you do submit a test booking, cancel it within the free 1-hour window and delete the test entry from the admin panel afterwards.
 
 ## Result to report back (one line each)
-- GitHub Pages copy: blocked? yes/no
 - Liveblog365 copy: blocked? yes/no
 - After removing the holiday: date selectable again? yes/no
 
-Once all three are "yes", the holiday feature is fully verified and this is closed — no further RK verification items remain open except the user's own confirmations (alert/customer email arrival in the radhakrishnanotout@gmail.com inbox, and whether the live Firestore catalog prices — Single Phase ₹3,800 / Three-phase DOL ₹4,500 / Star-delta ₹5,500 / RK Board ₹5,000 — are the intended ones).
+Once both are "yes", the holiday feature is fully verified and closed. Remaining RK confirmations are only Lalith's own: (a) alert/customer email arrival in the radhakrishnanotout@gmail.com inbox, and (b) whether the live Firestore catalog prices — Single Phase ₹3,800 / Three-phase DOL ₹4,500 / Star-delta ₹5,500 / RK Board ₹5,000, with no RK Deluxe in the dropdown — are the intended ones.
