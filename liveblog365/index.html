@@ -747,7 +747,7 @@ if(rkBK)rkBK.addEventListener('click',()=>setLang('kn'));
 applyLang();
 const isHoliday=d=>!!d&&S.holidays.includes(d);
 function updHolHint(){const h=document.querySelector('#holHint');if(!h)return;const t=day(new Date());const up=S.holidays.filter(d=>d>=t).sort();h.textContent=up.length?('Please note: we are closed on '+up.slice(0,6).map(fmtD).join(', ')+(up.length>6?(' and '+(up.length-6)+' more dates'):'')):''}
-function capFor(d){const v=d?S.dateLimits[d]:null;return v!=null?Math.max(0,+v||0):(S.cap||3)}
+function capFor(d){const v=d?S.dateLimits[d]:null;return v!=null?Math.max(0,+v||0):Infinity}
 function isFull(d){return !!d&&((S.dayCounts[d]||0)>=capFor(d))}
 function updDateHint(){const bd=$('#bDate'),e2=$('#bErr');if(!bd||!e2||!bd.value)return;if(isHoliday(bd.value)){e2.textContent='Sorry, we are closed on '+fmtD(bd.value)+' (holiday). Please choose another date.'}else if(isFull(bd.value)){const cf=capFor(bd.value);e2.textContent=cf===0?('Sorry, bookings are closed on '+fmtD(bd.value)+'. Please choose another date.'):('Sorry, bookings are full for '+fmtD(bd.value)+' \u2014 we take only '+cf+(cf===1?' booking':' bookings')+' a day. Please choose another date.')}else if(/closed on|full for/.test(e2.textContent)){e2.textContent=''}}
 async function loadDayCounts(){if(!S.store||!S.store.live)return;const out={};const jobs=[];for(let i=0;i<31;i++){const ds=day(new Date(Date.now()+i*864e5));jobs.push(S.store.get('dayCounts',ds).then(doc=>{out[ds]=(doc&&+doc.count)||0}).catch(()=>{out[ds]=0}))}await Promise.all(jobs);S.dayCounts=out;updDateHint()}
@@ -915,16 +915,13 @@ function holidaysCard(){
   const rows=hs.length?hs.map(d=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #eee"><span>'+fmtD(d)+'</span><button class="btn ghost sm" data-holdel="'+d+'">Remove</button></div>').join(''):'<p class="hint">No holidays added yet.</p>';
   return '<div class="card" style="max-width:480px;margin-bottom:16px"><h3 style="margin-bottom:6px">Holidays (no bookings)</h3><p class="hint" style="margin-bottom:14px">Customers cannot book on a holiday date. Add the dates you are closed.</p><div class="form"><label class="f">Holiday date<input class="in" type="date" id="holDate"></label><p class="err" id="holErr" role="alert"></p><button class="btn" data-act="addhol">Add holiday</button></div><div style="margin-top:10px">'+rows+'</div></div>';
 }
-function limitsCard(){
-  return '<div class="card" style="max-width:480px;margin-bottom:16px"><h3 style="margin-bottom:6px">Daily booking limit</h3><p class="hint" style="margin-bottom:14px">Bookings close for a date once this many bookings are taken for that date. Set 3 to take only 3 bookings a day.</p><div class="form"><label class="f">Bookings per day<input class="in" type="number" id="capN" min="1" max="20" value="'+(S.cap||3)+'"></label><p class="err" id="capErr" role="alert"></p><button class="btn" data-act="savecap">Save daily limit</button></div></div>';
-}
 function dateLimitsCard(){
   const t=day(new Date());const es=Object.entries(S.dateLimits).filter(function(e){return e[0]>=t}).sort(function(a,b){return a[0]<b[0]?-1:1});
-  const rows=es.length?es.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #eee"><span>'+fmtD(e[0])+' \u2014 max '+e[1]+' booking'+(e[1]==1?'':'s')+'</span><button class="btn ghost sm" data-dldel="'+e[0]+'">Remove</button></div>'}).join(''):'<p class="hint">No date limits yet. Other dates use the daily limit above.</p>';
+  const rows=es.length?es.map(function(e){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #eee"><span>'+fmtD(e[0])+' \u2014 max '+e[1]+' booking'+(e[1]==1?'':'s')+'</span><button class="btn ghost sm" data-dldel="'+e[0]+'">Remove</button></div>'}).join(''):'<p class="hint">No date limits yet. Dates without a limit take unlimited bookings.</p>';
   return '<div class="card" style="max-width:480px;margin-bottom:16px"><h3 style="margin-bottom:6px">Booking limit by date</h3><p class="hint" style="margin-bottom:14px">Set a different limit for one date \u2014 for example 3 today and 2 tomorrow. Set 0 to close bookings for that date.</p><div class="form"><label class="f">Date<input class="in" type="date" id="dlDate"></label><label class="f">Bookings allowed on this date<input class="in" type="number" id="dlCap" min="0" max="20" value="2"></label><p class="err" id="dlErr" role="alert"></p><button class="btn" data-act="adddl">Save date limit</button></div><div style="margin-top:10px">'+rows+'</div></div>';
 }
 function settingsTab(){
-  return holidaysCard()+limitsCard()+dateLimitsCard()+`<div class="card" style="max-width:480px"><h3 style="margin-bottom:6px">Change password</h3>
+  return holidaysCard()+dateLimitsCard()+`<div class="card" style="max-width:480px"><h3 style="margin-bottom:6px">Change password</h3>
   <p class="hint" style="margin-bottom:14px">The first password is <b>RK@Admin2026</b>. Change it now.</p>
   <div class="form"><label class="f">Current password<input class="in" type="password" id="pwOld" autocomplete="current-password"></label>
   <label class="f">New password (8 or more characters)<input class="in" type="password" id="pwNew" autocomplete="new-password"></label>
@@ -967,11 +964,6 @@ $('#admBody').addEventListener('click',async e=>{
     const old=Object.fromEntries(S.products.map(p=>[p.id,p]));
     for(const p of draft){const o=old[p.id];if(o&&o.price!==p.price)await S.store.set('priceLog','pl-'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),{itemId:p.id,name:p.name,from:o.price,to:p.price,at:Date.now()})}
     await S.store.set('config','products',{items:draft,updatedAt:Date.now()});draft=null;toast('Prices saved');
-  }
-  if(a==='savecap'){
-    const cerr=$('#capErr'),cv=$('#capN')?(+$('#capN').value||0):0;if(cerr)cerr.textContent='';
-    if(!(cv>=1&&cv<=20)){if(cerr)cerr.textContent='Enter a number from 1 to 20.'}
-    else{await S.store.set('config','limits',{cap:cv,updatedAt:Date.now()});S.cap=cv;loadDayCounts();$('#admBody').innerHTML=settingsTab();toast('Daily limit saved - '+cv+' bookings per day')}
   }
   if(a==='adddl'){
     const derr=$('#dlErr'),dv=$('#dlDate')?$('#dlDate').value:'',dcv=$('#dlCap')?(+$('#dlCap').value):NaN;if(derr)derr.textContent='';
