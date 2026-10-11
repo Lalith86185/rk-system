@@ -854,6 +854,7 @@ bindReviewForm();
 const tg=$('#tGo');if(tg)tg.addEventListener('click',trackLookup);
 
 /* ---------- admin ---------- */
+function warrantyRange(ds){if(!ds)return null;const p=String(ds).split('-').map(Number);if(p.length<3||!p[0])return null;const s=new Date(Date.UTC(p[0],p[1]-1,p[2]));const e=new Date(Date.UTC(p[0]+2,p[1]-1,p[2]));e.setUTCDate(e.getUTCDate()-1);const f=function(d){return fmtD(d.toISOString().slice(0,10))};return [f(s),f(e)]}
 function numWords(n){n=Math.round(+n||0);if(n===0)return 'Zero';const ones=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'],tens=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];const two=function(x){return x<20?ones[x]:(tens[(x/10)|0]+(x%10?' '+ones[x%10]:''))};const three=function(x){return ((x/100)|0?ones[(x/100)|0]+' Hundred'+(x%100?' ':''):'')+(x%100?two(x%100):'')};let out='';const cr=(n/1e7)|0,lk=((n/1e5)|0)%100,th=((n/1e3)|0)%100,rest=n%1000;if(cr)out+=three(cr)+' Crore ';if(lk)out+=two(lk)+' Lakh ';if(th)out+=two(th)+' Thousand ';if(rest)out+=three(rest);return out.trim()}
 function openBill(b){
   const cust=b.name?('<b>'+esc(b.name)+'</b><br>'+(b.address?esc(b.address)+'<br>':'')+'Mobile: '+esc(b.phone||'')):('Mobile: '+esc(b.phone||''));
@@ -862,7 +863,7 @@ function openBill(b){
   +'<div class="head"><div><h1>RK System</h1><div class="sub">Automatic Water Level Controllers with Indicator<br>Madhugirihalli, Yelahanka, Bengaluru, Karnataka 560089<br>Call / WhatsApp: 72046 38853</div></div><div class="ttl"><b>BILL / RECEIPT</b><br>Bill No: '+esc(b.id)+'<br>Date: '+fmtD(day(new Date()))+'</div></div>'
   +'<p class="meta"><b>Billed to:</b><br>'+cust+'<br>Service date: '+fmtD(b.date)+', '+esc(b.slot||'')+'</p>'
   +'<table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead><tbody><tr><td>'+esc(b.itemName)+' ('+(b.kind==='system'?'New system':'Service')+')</td><td class="r">1</td><td class="r">'+inr(b.price)+'</td><td class="r">'+inr(b.price)+'</td></tr><tr class="tot"><td colspan="3">Total</td><td class="r">'+inr(b.price)+'</td></tr></tbody></table>'
-  +'<p class="meta">Amount in words: <b>Rupees '+numWords(b.price)+' only</b></p>'+stat
+  +'<p class="meta">Amount in words: <b>Rupees '+numWords(b.price)+' only</b></p>'+(b.kind==='system'&&warrantyRange(b.date)?'<p class="meta" style="border:1.5px solid #1F2A8C;padding:10px 12px;background:#f7f8ff"><b>Warranty: 2 years</b> on this new system, valid from <b>'+warrantyRange(b.date)[0]+'</b> to <b>'+warrantyRange(b.date)[1]+'</b>.</p>':'')+stat
   +'<div class="foot">Thank you for choosing RK System - rkwaterlevelcontroller.liveblog365.com. This is a computer-generated bill and needs no signature.</div></body></html>';
   const w=window.open('','_blank');if(!w){toast('Please allow popups to download the bill');return}
   w.document.open();w.document.write(html);w.document.close();w.focus();setTimeout(()=>{try{w.print()}catch(e){}},450);
@@ -896,7 +897,7 @@ function bookingsTab(){
   return bar+`<div class="tw"><table><thead><tr><th>ID</th><th>Customer</th><th>Item</th><th>When</th><th>Where</th><th>Status</th><th></th></tr></thead><tbody>${B.map(b=>`<tr>
   <td><b>${esc(b.id)}</b><br><span class="hint">Booked ${fmtWhen(b.createdAt)}</span></td>
   <td>${esc(b.name)}<br><a href="tel:+91${esc(b.phone)}">${esc(b.phone)}</a>${b.email?`<br><span class="hint">${esc(b.email)}</span>`:''}</td>
-  <td>${esc(b.itemName)}<br><b>${inr(b.price)}</b></td>
+  <td>${esc(b.itemName)}<br><b>${inr(b.price)}</b>${b.kind==='system'&&warrantyRange(b.date)?`<br><span class="hint">2-year warranty: ${warrantyRange(b.date).join(' to ')}</span>`:''}</td>
   <td>${esc(b.date)}<br><span class="hint">${esc(b.slot)}</span></td>
   <td>${b.mapUrl?`<a href="${esc(b.mapUrl)}" target="_blank" rel="noopener">Open map</a><br>`:''}<span class="hint">${esc((b.address||'').slice(0,40))}</span></td>
   <td><select class="st s-${esc(b.status)}" data-st="${esc(b.id)}" aria-label="Status for ${esc(b.id)}">${statusList.map(s=>`<option ${b.status===s?'selected':''}>${s}</option>`).join('')}</select></td>

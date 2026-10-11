@@ -37,3 +37,13 @@ The KN translation table in index.html (line ~709) is keyed by the exact English
 
 ## Sunday health check that found this (2026-10-11, ~10:45 IST)
 Live site https://rkwaterlevelcontroller.liveblog365.com loaded normally: areas-we-serve section present with all 10 areas (Yelahanka, Yelahanka New Town, Attur, Jakkur, Hebbal, Thanisandra, Sahakara Nagar, Amruthahalli, Vidyaranyapura, Kogilu), RK Deluxe ₹1,800 installed, visit ₹300, repair ₹250, AMC ₹1,200/yr, address Madhugirihalli, Yelahanka, Bengaluru 560089, phone 72046 38853, Product JSON-LD ₹1,800 InStock. No outage or price drift found.
+
+## Extension added 2026-10-11 (afternoon, after the bill-at-order-time ship)
+
+4. NEW FAQ entry — insert after "How do I book?" in index.html (FAQ section, ~line 365). Rationale: the FAQ currently has exactly 4 entries and none mentions the bill; the owner himself spent ~35 min on 2026-10-11 (08:35–09:10 UTC chat) hunting for where to download it, moving it from Completed-only to order-time. Customers will hit the same wall.
+EN summary: "How do I get my bill?"
+EN body: "Right after you book, tap Download bill on the confirmation screen. Later, open Track booking, enter the mobile number you booked with, and tap Download bill on your booking card — it is there for every booking except cancelled ones. The bill opens ready to print or save as a PDF."
+KN keys to add to the translation table:
+- "How do I get my bill?" → "ನನ್ನ ಬಿಲ್ ಅನ್ನು ನಾನು ಹೇಗೆ ಪಡೆಯುವುದು?"
+- Body → "ಬುಕ್ ಮಾಡಿದ ತಕ್ಷಣ, ದೃಢೀಕರಣ ಪರದೆಯಲ್ಲಿ 'ಬಿಲ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ' ಒತ್ತಿ. ನಂತರ, 'ಬುಕಿಂಗ್ ಸ್ಥಿತಿ' ತೆರೆದು, ಬುಕ್ ಮಾಡಿದ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ, ನಿಮ್ಮ ಬುಕಿಂಗ್ ಕಾರ್ಡ್‌ನಲ್ಲಿ 'ಬಿಲ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ' ಒತ್ತಿ — ರದ್ದಾದ ಬುಕಿಂಗ್‌ಗಳನ್ನು ಹೊರತುಪಡಿಸಿ ಎಲ್ಲಾ ಬುಕಿಂಗ್‌ಗಳಿಗೂ ಇದು ಇರುತ್ತದೆ. ಬಿಲ್ ಮುದ್ರಿಸಲು ಅಥವಾ PDF ಆಗಿ ಉಳಿಸಲು ಸಿದ್ಧವಾಗಿ ತೆರೆಯುತ್ತದೆ."
+Deploy note: bundle this 4th item with items 1–3 above in the same upload; verify the new entry in EN and ಕನ್ನಡ after deploy. Behaviour described matches commit 009acc6 (bill at order time, all non-cancelled bookings), verified live 2026-10-11 08:59 UTC.
