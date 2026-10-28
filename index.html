@@ -781,7 +781,7 @@ if(rkBE)rkBE.addEventListener('click',()=>setLang('en'));
 if(rkBK)rkBK.addEventListener('click',()=>setLang('kn'));
 applyLang();
 function effTheme(){const t=document.documentElement.getAttribute('data-theme');if(t==='dark'||t==='light')return t;try{return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}catch(e){return 'light'}}
-function syncThemeBtn(){const b=$('#themeBtn');if(!b)return;b.textContent=effTheme()==='dark'?'\u2600\uFE0F':'\U0001F319'}
+function syncThemeBtn(){const b=$('#themeBtn');if(!b)return;b.textContent=effTheme()==='dark'?'\u2600\uFE0F':'\uD83C\uDF19'}
 function setTheme(t){document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('rk-theme',t)}catch(e){}const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='dark'?'#0A1230':'#F3F7FC';syncThemeBtn()}
 const rkTB=$('#themeBtn');if(rkTB)rkTB.addEventListener('click',()=>setTheme(effTheme()==='dark'?'light':'dark'));syncThemeBtn();
 const isHoliday=d=>!!d&&S.holidays.includes(d);
