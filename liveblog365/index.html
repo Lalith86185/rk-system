@@ -140,7 +140,7 @@ section.alt{background:var(--surface);border-top:1px solid var(--line);border-bo
 .levels{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
 .panelwrap{position:relative;width:min(100%,409px);margin:0 auto;border-radius:16px;border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
 .panelwrap>img{width:100%;height:auto}
-.pl{position:absolute;width:5%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:transparent;pointer-events:none;transition:background .2s,box-shadow .2s}
+.pl{position:absolute;width:5%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:transparent;pointer-events:none;transition:background .35s,box-shadow .35s}
 .pl.on{background:#3dff73;box-shadow:0 0 10px 4px rgba(61,255,115,.95)}
 .tank{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .tank h3{font-size:1.05rem;margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline}
@@ -317,9 +317,9 @@ footer .lbtn{background:none;border:0;color:var(--on-band);opacity:.9;text-decor
         <h2>Try the panel</h2>
         <p class="muted" style="margin-top:10px">The label draws the pipe from the sump up to the overhead tank, with a light at each level. Move the sliders to see how the lights follow the water.</p>
         <div class="levels">
-          <div class="tank"><h3>Overhead tank <b id="ohv">75%</b></h3><div class="leds" id="ohl"></div>
+          <div class="tank"><h3>Overhead tank <b id="ohv">75%</b></h3><div class="leds" id="ohl"><div class="led" data-oh="25"><i></i>25%</div><div class="led" data-oh="50"><i></i>50%</div><div class="led" data-oh="75"><i></i>75%</div><div class="led" data-oh="100"><i></i>100%</div></div>
             <input type="range" min="0" max="100" step="25" value="75" id="ohr" aria-label="Overhead tank level"></div>
-          <div class="tank"><h3>Sump <b id="spv">50%</b></h3><div class="leds" id="spl"></div>
+          <div class="tank"><h3>Sump <b id="spv">50%</b></h3><div class="leds" id="spl"><div class="led" data-sp="25"><i></i>25%</div><div class="led" data-sp="50"><i></i>50%</div><div class="led" data-sp="100"><i></i>100%</div></div>
             <input type="range" min="0" max="100" step="25" value="50" id="spr" aria-label="Sump level"></div>
         </div>
         <p class="hint" style="margin-top:12px">The panel also has a POWER light and a NEED light.</p>
@@ -640,13 +640,20 @@ function logout(){
 $('#navLogout').addEventListener('click',logout);$('#admLogout').addEventListener('click',logout);
 
 /* ---------- panel demo ---------- */
-function ledHTML(levels,val){return levels.map(l=>`<div class="led ${val>=l?'on':''}"><i></i>${l}%</div>`).join('')}
+let lvSeq=0;
+function sweepLights(seq,sel,attr,val){
+  const dots=[...document.querySelectorAll(sel)].sort((a,b)=>+a.dataset[attr]-+b.dataset[attr]);
+  const changed=dots.filter(d=>d.classList.contains('on')!==(val>=+d.dataset[attr]));
+  const ordered=changed.filter(d=>val>=+d.dataset[attr]).sort((a,b)=>+a.dataset[attr]-+b.dataset[attr]).concat(changed.filter(d=>val<+d.dataset[attr]).sort((a,b)=>+b.dataset[attr]-+a.dataset[attr]));
+  ordered.forEach((d,i)=>{const on=val>=+d.dataset[attr];setTimeout(()=>{if(seq===lvSeq)d.classList.toggle('on',on)},i*130)});
+}
 function drawLevels(){
-  const o=+$('#ohr').value,s=+$('#spr').value;
-  $('#ohl').innerHTML=ledHTML([25,50,75,100],o);$('#ohv').textContent=o+'%';
-  $('#spl').innerHTML=ledHTML([25,50,100],s);$('#spv').textContent=s+'%';
-  document.querySelectorAll('.pl[data-oh]').forEach(d=>d.classList.toggle('on',o>=+d.dataset.oh));
-  document.querySelectorAll('.pl[data-sp]').forEach(d=>d.classList.toggle('on',s>=+d.dataset.sp));
+  const seq=++lvSeq,o=+$('#ohr').value,s=+$('#spr').value;
+  $('#ohv').textContent=o+'%';$('#spv').textContent=s+'%';
+  sweepLights(seq,'.led[data-oh]','oh',o);
+  sweepLights(seq,'.led[data-sp]','sp',s);
+  sweepLights(seq,'.pl[data-oh]','oh',o);
+  sweepLights(seq,'.pl[data-sp]','sp',s);
 }
 $('#ohr').addEventListener('input',drawLevels);$('#spr').addEventListener('input',drawLevels);
 
