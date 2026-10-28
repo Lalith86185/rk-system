@@ -147,7 +147,7 @@ section.alt{background:var(--surface);border-top:1px solid var(--line);border-bo
 .panelwrap.pumping .flow{opacity:1}
 .panelwrap.pumping .flow path{animation:flowmove 1s linear infinite}
 @keyframes flowmove{to{stroke-dashoffset:-36}}
-.motor{position:absolute;width:14%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(255,45,45,.85),rgba(255,45,45,.35) 45%,rgba(255,45,45,0) 70%);opacity:0;transition:opacity .3s;pointer-events:none}
+.motor{position:absolute;width:14%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(190,0,0,.95),rgba(150,0,0,.5) 45%,rgba(150,0,0,0) 70%);opacity:0;transition:opacity .3s;pointer-events:none}
 .panelwrap.pumping .motor{opacity:1;animation:mpulse 1.2s ease-in-out infinite}
 @keyframes mpulse{50%{opacity:.55}}
 .tank{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
@@ -320,7 +320,7 @@ footer .lbtn{background:none;border:0;color:var(--on-band);opacity:.9;text-decor
 
   <section class="s alt">
     <div class="wrap split">
-      <div class="panelwrap"><img src="panel.jpg" alt="RK System Deluxe panel label showing overhead tank and sump level indicators" width="555" height="760" loading="lazy" decoding="async"><i class="pl" data-oh="100" style="left:22.5%;top:17.0%" aria-hidden="true"></i><i class="pl" data-oh="75" style="left:22.5%;top:21.0%" aria-hidden="true"></i><i class="pl" data-oh="50" style="left:22.5%;top:24.8%" aria-hidden="true"></i><i class="pl" data-oh="25" style="left:22.5%;top:28.6%" aria-hidden="true"></i><i class="pl" data-sp="100" style="left:77.4%;top:46.0%" aria-hidden="true"></i><i class="pl" data-sp="50" style="left:77.4%;top:50.4%" aria-hidden="true"></i><i class="pl" data-sp="25" style="left:77.4%;top:54.4%" aria-hidden="true"></i><svg class="flow" viewBox="0 0 555 760" aria-hidden="true"><path d="M462 440 L462 261 L226 261 L226 91 L150 91"/></svg><i class="motor" style="left:48.6%;top:32.9%" aria-hidden="true"></i></div>
+      <div class="panelwrap"><img src="panel.jpg" alt="RK System Deluxe panel label showing overhead tank and sump level indicators" width="555" height="760" loading="lazy" decoding="async"><i class="pl" data-oh="100" style="left:22.5%;top:17.0%" aria-hidden="true"></i><i class="pl" data-oh="75" style="left:22.5%;top:21.0%" aria-hidden="true"></i><i class="pl" data-oh="50" style="left:22.5%;top:24.8%" aria-hidden="true"></i><i class="pl" data-oh="25" style="left:22.5%;top:28.6%" aria-hidden="true"></i><i class="pl" data-sp="100" style="left:77.4%;top:46.0%" aria-hidden="true"></i><i class="pl" data-sp="50" style="left:77.4%;top:50.4%" aria-hidden="true"></i><i class="pl" data-sp="25" style="left:77.4%;top:54.4%" aria-hidden="true"></i><svg class="flow" viewBox="0 0 555 760" aria-hidden="true"><path d="M462 440 L462 261 L312 261"/><path d="M226 261 L226 91 L150 91"/></svg><i class="motor" style="left:48.6%;top:32.9%" aria-hidden="true"></i></div>
       <div>
         <h2>Try the panel</h2>
         <p class="muted" style="margin-top:10px">The label draws the pipe from the sump up to the overhead tank, with a light at each level. Move the sliders to see how the lights follow the water.</p>
@@ -662,7 +662,7 @@ function drawLevels(){
   sweepLights(seq,'.led[data-sp]','sp',s);
   sweepLights(seq,'.pl[data-oh]','oh',o);
   sweepLights(seq,'.pl[data-sp]','sp',s);
-  document.querySelector('.panelwrap').classList.toggle('pumping',o<100);
+  document.querySelector('.panelwrap').classList.toggle('pumping',o<100&&s>0);
 }
 $('#ohr').addEventListener('input',drawLevels);$('#spr').addEventListener('input',drawLevels);
 
