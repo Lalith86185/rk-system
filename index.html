@@ -8,6 +8,7 @@
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://lalith86185.github.io/rk-system/">
 <meta name="theme-color" content="#1F2A8C">
+<script>try{var _t=localStorage.getItem('rk-theme');if(_t==='dark'||_t==='light'){document.documentElement.setAttribute('data-theme',_t);var _m=document.querySelector('meta[name="theme-color"]');if(_m)_m.content=_t==='dark'?'#0A1230':'#F3F7FC';}}catch(e){}</script>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -263,7 +264,7 @@ footer .lbtn{background:none;border:0;color:var(--on-band);opacity:.9;text-decor
 <header class="top">
   <div class="wrap">
     <a href="#home" aria-label="RK System home"><img width="415" height="120" class="logo" src="logo.png" alt="RK System"></a>
-    <span class="langsw" data-nolang><button type="button" class="lgbtn" id="lgEn">EN</button><button type="button" class="lgbtn" id="lgKn">ಕನ್ನಡ</button></span>
+    <span class="langsw" data-nolang><button type="button" class="lgbtn" id="lgEn">EN</button><button type="button" class="lgbtn" id="lgKn">ಕನ್ನಡ</button><button type="button" class="lgbtn" id="themeBtn" aria-label="Switch between dark and light theme">🌙</button></span>
     <nav class="nav" aria-label="Main">
       <a href="#home" data-nav="home">Home</a>
       <a href="#products" data-nav="products">Products</a>
@@ -779,6 +780,10 @@ const rkBE=$('#lgEn'),rkBK=$('#lgKn');
 if(rkBE)rkBE.addEventListener('click',()=>setLang('en'));
 if(rkBK)rkBK.addEventListener('click',()=>setLang('kn'));
 applyLang();
+function effTheme(){const t=document.documentElement.getAttribute('data-theme');if(t==='dark'||t==='light')return t;try{return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}catch(e){return 'light'}}
+function syncThemeBtn(){const b=$('#themeBtn');if(!b)return;b.textContent=effTheme()==='dark'?'\u2600\uFE0F':'\U0001F319'}
+function setTheme(t){document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('rk-theme',t)}catch(e){}const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='dark'?'#0A1230':'#F3F7FC';syncThemeBtn()}
+const rkTB=$('#themeBtn');if(rkTB)rkTB.addEventListener('click',()=>setTheme(effTheme()==='dark'?'light':'dark'));syncThemeBtn();
 const isHoliday=d=>!!d&&S.holidays.includes(d);
 function updHolHint(){const h=document.querySelector('#holHint');if(!h)return;const t=day(new Date());const up=S.holidays.filter(d=>d>=t).sort();h.textContent=up.length?('Please note: we are closed on '+up.slice(0,6).map(fmtD).join(', ')+(up.length>6?(' and '+(up.length-6)+' more dates'):'')):''}
 function capFor(d){const v=d?S.dateLimits[d]:null;return v!=null?Math.max(0,+v||0):Infinity}
