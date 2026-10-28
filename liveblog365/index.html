@@ -256,7 +256,7 @@ footer .lbtn{background:none;border:0;color:var(--on-band);opacity:.9;text-decor
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
-<style>.langsw{display:inline-flex;gap:4px;align-items:center;margin-left:auto}.lgbtn{border:1px solid rgba(140,160,200,.55);background:transparent;color:inherit;border-radius:999px;padding:4px 10px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit}.lgbtn.on{background:#e63946;border-color:#e63946;color:#fff}</style>
+<style>.langsw{display:inline-flex;gap:4px;align-items:center;margin-left:auto}.lgbtn{border:1px solid rgba(140,160,200,.55);background:transparent;color:inherit;border-radius:999px;padding:4px 10px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit}.lgbtn.on{background:#e63946;border-color:#e63946;color:#fff}#themeBtn{width:34px;height:34px;padding:0;border:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem;background:#111;line-height:1}</style>
 </head>
 <body>
 
@@ -781,7 +781,7 @@ if(rkBE)rkBE.addEventListener('click',()=>setLang('en'));
 if(rkBK)rkBK.addEventListener('click',()=>setLang('kn'));
 applyLang();
 function effTheme(){const t=document.documentElement.getAttribute('data-theme');if(t==='dark'||t==='light')return t;try{return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}catch(e){return 'light'}}
-function syncThemeBtn(){const b=$('#themeBtn');if(!b)return;b.textContent=effTheme()==='dark'?'\u2600\uFE0F':'\uD83C\uDF19'}
+function syncThemeBtn(){const b=$('#themeBtn');if(!b)return;const d=effTheme()==='dark';b.textContent=d?'\u2600\uFE0F':'\uD83C\uDF19';b.style.background=d?'#fff':'#111'}
 function setTheme(t){document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('rk-theme',t)}catch(e){}const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==='dark'?'#0A1230':'#F3F7FC';syncThemeBtn()}
 const rkTB=$('#themeBtn');if(rkTB)rkTB.addEventListener('click',()=>setTheme(effTheme()==='dark'?'light':'dark'));syncThemeBtn();
 const isHoliday=d=>!!d&&S.holidays.includes(d);
